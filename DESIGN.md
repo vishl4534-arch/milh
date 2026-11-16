@@ -38,3 +38,9 @@ A large circular dial around the minutes number. While a block is being watered,
 - Water dial: water rises to the current level once, its surface keeps moving; the ring fills as minutes pass.
 - Tank: water rises to the reading once; soil bars fill once.
 - Done: water-drop burst (rare, so it may delight). Ask: soft breathing ring. Every button presses in.
+
+## Owner screens
+Same world as the tablet (`.owner` in `web/src/index.css` shares the tokens and redefines the Tailwind ones, so every form and table follows), a little denser for a laptop.
+- Header: logo, farm, "Farm tablet view" (sand pill) and Sign out. Tabs: the tablet's gliding green pill, six equal tabs with icons.
+- Today: the focal card is **today's water**: Milh's plan in green over the usual routine in sand, with saved litres, cost and blocks. Weather (ET₀, rain, sun) and an alerts card sit beside it. Each block's card repeats the same usual-vs-Milh bar, its taps as tinted pills, and the reasoning in two soft panels.
+- Charts: sand (usual), green (Milh), water blue (confirmed); the salt clock is a green line.

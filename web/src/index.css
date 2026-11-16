@@ -226,6 +226,60 @@ html[lang="ur"] .kiosk,
 html[lang="ar"] .kiosk {
   font-family: var(--font-urdu);
 }
+
+/* ---- Owner screens: the same warm, light world as the tablet, a little denser for a laptop ----------- */
+.owner {
+  --font-kiosk: "Nunito", "Noto Sans", system-ui, sans-serif;
+  --k-bg: #f6f3ec;
+  --k-card: #ffffff;
+  --k-sand: #f1e6cf;
+  --k-sand-soft: #f7efdf;
+  --k-green: #2f6b4f;
+  --k-green-soft: #e3f0e6;
+  --k-ink: #1d2a24;
+  --k-muted: #6b746f;
+  /* the shared Tailwind tokens follow, so every existing owner form and table joins in */
+  --color-panel: #ffffff;
+  --color-salt: #f7f3ea;
+  --color-ink: #1d2a24;
+  --color-ink-soft: #6b746f;
+  --color-line: rgb(29 42 36 / 0.1);
+  min-height: 100dvh;
+  overflow-x: clip;
+  background:
+    radial-gradient(80% 50% at 100% 0%, rgb(234 217 181 / 0.35), transparent 60%),
+    radial-gradient(60% 40% at 0% 100%, rgb(79 157 105 / 0.07), transparent 60%),
+    var(--k-bg);
+  color: var(--k-ink);
+  font-family: var(--font-kiosk);
+}
+.owner .num {
+  font-family: var(--font-kiosk);
+  font-stretch: 100%;
+  font-variant-numeric: tabular-nums;
+}
+/* Plain panels become the tablet's soft white cards; primary buttons become the green accent. */
+.owner .bg-panel {
+  border-radius: 1.5rem;
+  box-shadow: 0 1px 0 rgb(29 42 36 / 0.04), 0 18px 40px -28px rgb(92 74 40 / 0.4);
+}
+.owner .bg-ink {
+  background-color: var(--k-green);
+}
+.owner :is(input, select, textarea):not([type="checkbox"]):not([type="radio"]):not([type="file"]) {
+  border-radius: 0.85rem;
+  border-color: transparent;
+  background-color: var(--color-salt);
+  transition: box-shadow 150ms ease;
+}
+.owner :is(input, select, textarea):focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(47 107 79 / 0.35);
+}
+.owner h1, .owner h2, .owner h3 {
+  text-wrap: balance;
+  letter-spacing: -0.01em;
+}
 .kiosk .num {
   font-family: var(--font-kiosk);
   font-stretch: 100%;

@@ -35,11 +35,11 @@ export function SaltClockView({ clock: c, tz, cropName }: { clock: SaltClock; tz
         <div className="h-64" dir="ltr">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={c.points} margin={{ left: 0, right: 12, top: 8, bottom: 0 }}>
-              <CartesianGrid stroke="#d9ded9" strokeDasharray="3 3" />
-              <XAxis dataKey="day" tick={{ fontSize: 12 }} />
-              <YAxis tick={{ fontSize: 12 }} domain={['auto', 'auto']} />
-              <Tooltip formatter={(v) => [`${v} dS/m`, 'EC']} />
-              <Line type="monotone" dataKey="ec" stroke="#1d4ed8" strokeWidth={2.5} dot={{ r: 4 }} />
+              <CartesianGrid stroke="rgba(29,42,36,.08)" strokeDasharray="4 4" vertical={false} />
+              <XAxis dataKey="day" tick={{ fontSize: 12, fill: "#6b746f" }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 12, fill: "#6b746f" }} axisLine={false} tickLine={false} domain={['auto', 'auto']} />
+              <Tooltip contentStyle={{ borderRadius: 14, border: 'none', boxShadow: '0 12px 30px -12px rgba(92,74,40,.45)', fontFamily: 'Nunito' }} formatter={(v) => [`${v} dS/m`, 'EC']} />
+              <Line type="monotone" dataKey="ec" stroke="#2f6b4f" strokeWidth={3} dot={{ r: 5, fill: "#2f6b4f", strokeWidth: 0 }} activeDot={{ r: 7 }} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -61,7 +61,7 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
   return (
     <div className="rounded-3xl bg-panel p-5 ring-1 ring-line">
       <div className="text-sm text-ink-soft">{label}</div>
-      <div className="num mt-1 text-3xl font-bold">{value}</div>
+      <div className="num mt-1 text-3xl font-black">{value}</div>
       {sub && <div className="text-sm text-ink-soft">{sub}</div>}
     </div>
   )
