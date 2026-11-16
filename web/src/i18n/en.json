@@ -1,10 +1,26 @@
 {
-  "app": { "name": "Milh", "tagline": "Water decisions for salty desert farms" },
-  "common": {
-    "save": "Save", "cancel": "Cancel", "loading": "Loading…", "retry": "Try again", "minutes": "min",
-    "source": "Source", "ago": "{{age}} ago", "listen": "Listen", "language": "Language", "signOut": "Sign out"
+  "app": {
+    "name": "Milh",
+    "tagline": "Water decisions for salty desert farms"
   },
-  "time": { "justNow": "just now", "minutes": "{{n}} min", "hours": "{{n}} h", "days": "{{n}} d" },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "loading": "Loading…",
+    "retry": "Try again",
+    "minutes": "min",
+    "source": "Source",
+    "ago": "{{age}} ago",
+    "listen": "Listen",
+    "language": "Language",
+    "signOut": "Sign out"
+  },
+  "time": {
+    "justNow": "just now",
+    "minutes": "{{n}} min",
+    "hours": "{{n}} h",
+    "days": "{{n}} d"
+  },
   "kiosk": {
     "tapToStart": "Tap to start",
     "tapToStartHint": "Turns on the speaker for today's announcements",
@@ -34,7 +50,8 @@
     "sunrise": "Sunrise",
     "sunset": "Sunset",
     "forecastAge": "Forecast {{age}} old",
-    "habitFallback": "Usual routine (missing data)"
+    "habitFallback": "Usual routine (missing data)",
+    "ask": "Ask"
   },
   "empty": {
     "noReading": "No reading yet",
@@ -42,7 +59,12 @@
     "noForecast": "No forecast yet",
     "addOne": "Add one"
   },
-  "status": { "ok": "OK", "warn": "Rising", "high": "Too salty", "none": "Not tested" },
+  "status": {
+    "ok": "OK",
+    "warn": "Rising",
+    "high": "Too salty",
+    "none": "Not tested"
+  },
   "entry": {
     "title": "Add a reading",
     "water_ec": "Water salt (EC)",
@@ -56,8 +78,14 @@
     "tooHigh": "That number is too high"
   },
   "login": {
-    "title": "Owner sign in", "email": "Email", "password": "Password", "submit": "Sign in",
-    "kioskTitle": "Farm tablet", "deviceKey": "Tablet key (from the owner)", "pin": "Your PIN", "kioskSubmit": "Open"
+    "title": "Owner sign in",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Sign in",
+    "kioskTitle": "Farm tablet",
+    "deviceKey": "Tablet key (from the owner)",
+    "pin": "Your PIN",
+    "kioskSubmit": "Open"
   },
   "fallback": {
     "no_soil_test": "No soil test yet",
@@ -65,5 +93,18 @@
     "no_water_ec": "No water salt reading: usual routine used",
     "no_sun_times": "No sunrise time: default schedule",
     "water_ec_stale": "Water salt reading is old"
+  },
+  "voice": {
+    "starting": "Starting the microphone…",
+    "listening": "Listening…",
+    "thinking": "Thinking…",
+    "speaking": "Speaking…",
+    "muted": "Microphone muted",
+    "micDenied": "The microphone is off. You can type instead.",
+    "type": "Type a question",
+    "close": "Close",
+    "yes": "Yes",
+    "no": "No",
+    "offline": "Voice help needs the internet"
   }
 }

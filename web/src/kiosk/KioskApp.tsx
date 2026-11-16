@@ -1,4 +1,4 @@
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
@@ -11,6 +11,8 @@ import { enqueue, flushOutbox } from './outbox'
 import { browserPlayer } from './player'
 import { KioskView } from './KioskView'
 import { ReadingEntry } from './ReadingEntry'
+import { assistantStatus } from './voice/api'
+import { VoiceMode } from './voice/VoiceMode'
 
 export function KioskApp({ farmId }: { farmId?: string }) {
   const { t, i18n } = useTranslation()
@@ -21,8 +23,11 @@ export function KioskApp({ farmId }: { farmId?: string }) {
   const [unlocked, setUnlocked] = useState(false)
   const [blocked, setBlocked] = useState(false)
   const [entry, setEntry] = useState(false)
+  const [voiceOpen, setVoiceOpen] = useState(false)
   const [now, setNow] = useState(() => Date.now())
   const lang = (i18n.language as Lang) || 'en'
+  const voice = useQuery({ queryKey: ['assistant', lang, farmId], queryFn: () => assistantStatus(lang, farmId),
+    retry: false, staleTime: 5 * 60_000 })
 
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), 30_000)
@@ -108,7 +113,12 @@ export function KioskApp({ farmId }: { farmId?: string }) {
     <>
       <KioskView state={data} lang={lang} now={now} onDone={done} onListen={listen}
         onLang={(l) => void setLanguage(l)} onAddReading={() => setEntry(true)} soundBlocked={blocked}
-        onUnblockSound={() => { setBlocked(false); player.unlock() }} />
+        onUnblockSound={() => { setBlocked(false); player.unlock() }}
+        canAsk={voice.data?.available === true} onAsk={() => setVoiceOpen(true)} />
+      {voiceOpen && (
+        <VoiceMode lang={lang} farmId={farmId}
+          onClose={() => { setVoiceOpen(false); void qc.invalidateQueries({ queryKey: ['bundle'] }) }} />
+      )}
       {entry && (
         <ReadingEntry bundle={data.bundle} lang={lang} onClose={() => setEntry(false)}
           onSaved={() => void qc.invalidateQueries({ queryKey: ['bundle'] })} />

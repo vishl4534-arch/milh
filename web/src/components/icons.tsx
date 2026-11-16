@@ -28,6 +28,9 @@ export const Cross = (p: P) => <Svg {...p}><path d="M6 6l12 12M18 6 6 18" /></Sv
 export const Speaker = (p: P) => (
   <Svg {...p}><path d="M4 9.5h3.5L12 5.5v13L7.5 14.5H4zM15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" /></Svg>
 )
+export const Mic = (p: P) => (
+  <Svg {...p}><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3zM5 11a7 7 0 0 0 14 0M12 18v3" /></Svg>
+)
 export const Plus = (p: P) => <Svg {...p}><path d="M12 5v14M5 12h14" /></Svg>
 export const Leaf = (p: P) => <Svg {...p}><path d="M5 19c0-8 5-13 14-14-1 9-6 14-14 14zM5 19l7-7" /></Svg>
 export const Thermo = (p: P) => <Svg {...p}><path d="M10 13.5V5a2 2 0 0 1 4 0v8.5a4 4 0 1 1-4 0z" /></Svg>

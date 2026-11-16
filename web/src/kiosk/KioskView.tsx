@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import type { BundleState } from '../api/hooks'
 import type { KAnnouncement, KBlock, KRun, KSource, KTank, Lang } from '../api/types'
-import { Check, Cross, Drop, Leaf, Plus, Rain, Speaker, Sunrise, Sunset, Thermo, Warn, Wifi } from '../components/icons'
+import { Check, Cross, Drop, Leaf, Mic, Plus, Rain, Speaker, Sunrise, Sunset, Thermo, Warn, Wifi } from '../components/icons'
 import { pick } from '../i18n'
 import { ageText, dayMonth, hhmm, hoursSince, litres, localDay } from '../lib/format'
 import { PipeBar } from './PipeBar'
@@ -19,6 +19,8 @@ export interface KioskViewProps {
   onAddReading: () => void
   soundBlocked?: boolean
   onUnblockSound?: () => void
+  canAsk?: boolean
+  onAsk?: () => void
 }
 
 function focusRun(runs: KRun[]): KRun | null {
@@ -58,6 +60,12 @@ export function KioskView(props: KioskViewProps) {
           <SoilPanel blocks={b.blocks} lang={lang} tz={tz} today={b.day} />
         </div>
       </main>
+      {props.canAsk && !state.offline && (
+        <button type="button" onClick={props.onAsk}
+          className="fixed bottom-24 end-5 z-10 flex items-center gap-3 rounded-full bg-palm px-6 py-4 text-2xl font-bold text-white shadow-lg ring-4 ring-salt active:bg-palm-deep">
+          <Mic className="text-3xl" /> {t('kiosk.ask')}
+        </button>
+      )}
       <footer className="flex items-center gap-3 rounded-2xl bg-ink px-4 py-3 text-salt">
         <button type="button" onClick={() => props.onListen(nextAnn)} disabled={!nextAnn}
           aria-label={t('common.listen')}

@@ -84,3 +84,17 @@ test('a cached plan from another day is marked as not today', () => {
   )
   expect(screen.getByText(/Not today's plan/)).toBeInTheDocument()
 })
+
+test('the Ask button shows only when voice help is available and the tablet is online', () => {
+  const onAsk = vi.fn()
+  const props = { lang: 'en' as const, now: NOW, onDone: vi.fn(), onListen: vi.fn(), onLang: vi.fn(), onAddReading: vi.fn(), onAsk }
+  const { unmount } = render(<KioskView state={{ bundle: bundleFixture(), offline: false, cachedAt: null }} {...props} canAsk={false} />)
+  expect(screen.queryByRole('button', { name: /Ask/ })).toBeNull()
+  unmount()
+  const second = render(<KioskView state={{ bundle: bundleFixture(), offline: true, cachedAt: '2026-11-16T04:00:00+04:00' }} {...props} canAsk />)
+  expect(screen.queryByRole('button', { name: /Ask/ })).toBeNull()
+  second.unmount()
+  render(<KioskView state={{ bundle: bundleFixture(), offline: false, cachedAt: null }} {...props} canAsk />)
+  screen.getByRole('button', { name: /Ask/ }).click()
+  expect(onAsk).toHaveBeenCalled()
+})
