@@ -114,3 +114,14 @@ def test_match_block_words_and_crops(farm_bundle) -> None:  # type: ignore[no-un
     assert match_block("tomato wala", blocks).id == block.id  # type: ignore[union-attr]
     assert match_block("ٹماٹر", blocks).id == block.id  # type: ignore[union-attr]
     assert match_block("block 9", blocks) is None
+
+
+def test_block_ten_is_not_block_one() -> None:
+    from milh.kiosk import KBlock, KSoil
+
+    soil = KSoil(ece=None, ph=None, moisture_vwc=None, tested_on=None, status="none", source=None)
+    blocks = [KBlock(id=f"00000000-0000-0000-0000-0000000000{i:02d}", name=f"Block {i}", crop_key="tomato",
+                     crop_names={"en": f"Crop{i}"}, salt_threshold=2.5, soil=soil, next_test_due=None,
+                     next_test_reasons=[]) for i in range(1, 12)]
+    assert match_block("block 10", blocks).name == "Block 10"  # type: ignore[union-attr]
+    assert match_block("block 1", blocks).name == "Block 1"  # type: ignore[union-attr]

@@ -119,3 +119,35 @@ def test_urdu_answer(setup) -> None:  # type: ignore[no-untyped-def]
     session, farm, worker, _b = setup
     r = _turn(session, farm, worker, "بلاک 3 کتنا پانی؟", fake(tool_call("today_plan", block="3")), lang="ur")
     assert "منٹ" in r.reply
+
+
+@pytest.mark.parametrize("said,expected", [
+    ("haan", "yes"), ("haan ji", "yes"), ("yes please", "yes"), ("ok", "yes"), ("ہاں جی", "yes"),
+    ("nahi", "no"), ("no thanks", "no"),
+    ("ok block 2", None), ("okay what about two", None), ("say yes", None), ("yes or tap the", None),
+    ("yes no", None),
+])
+def test_yes_no_only_when_every_word_is_an_answer(said: str, expected: str | None) -> None:
+    assert chat_mod.yes_no(said) == expected
+
+
+@pytest.mark.parametrize("text", [
+    "Water block three for twenty minutes.", "Give it half an hour.", "بلاک کو تین منٹ دیں", "teen ghante",
+])
+def test_guard_blocks_number_words(text: str) -> None:
+    assert chat_mod.guard(text) is None
+
+
+def test_guard_allows_plain_small_talk() -> None:
+    assert chat_mod.guard("Hello! Ask me about today's watering.") == "Hello! Ask me about today's watering."
+
+
+def test_tool_error_gives_fixed_line_not_crash(setup, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    session, farm, worker, _b = setup
+
+    def boom(*a, **k):  # type: ignore[no-untyped-def]
+        raise RuntimeError("database hiccup")
+
+    monkeypatch.setattr(chat_mod, "run_tool", boom)
+    r = _turn(session, farm, worker, "how long?", fake(tool_call("today_plan", block="3")))
+    assert "not available right now" in r.reply

@@ -91,7 +91,7 @@ def match_block(text: str | None, blocks: list[KBlock]) -> KBlock | None:
     hits: set[str] = set()
     for b in blocks:
         name = b.name.lower()
-        if name in said:
+        if _has(said, name):
             hits.add(str(b.id))
         for n in re.findall(r"\d+", name):
             if re.search(rf"(?<!\d){n}(?!\d)", said) or any(_has(said, w) for w in NUMBER_WORDS.get(n, [])):

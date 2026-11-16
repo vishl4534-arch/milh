@@ -26,12 +26,24 @@ from milh.kiosk import KioskBundle, build_bundle
 from milh.models import Farm, IrrigationEvent, IrrigationPlan, User
 
 log = logging.getLogger("milh.assistant.chat")
-MAX_TOOL_ROUNDS = 2
 LANG_NAMES = {"en": "English", "ur": "Urdu", "ar": "Arabic", "hi": "Hindi"}
 
 YES = {"yes", "yeah", "yep", "ok", "okay", "sure", "correct", "right", "haan", "han", "ha", "ji", "jee", "haanji",
        "hanji", "theek", "thik", "ہاں", "جی", "ٹھیک", "हाँ", "हां", "जी", "✔"}
 NO = {"no", "nope", "nah", "cancel", "nahi", "nahin", "na", "mat", "نہیں", "نا", "मत", "नहीं", "✖"}
+# Words that may sit next to a yes or no without changing it ("yes please", "haan ji", "no thanks").
+FILLER = {"please", "thanks", "thank", "you", "ji", "jee", "hai", "sir", "boss", "bhai", "جی", "ہے", "شکریہ"}
+# Number and time words: the model's own small talk may contain none of these (numbers come from code only).
+NUMBER_WORDS = {
+    "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve",
+    "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty", "thirty", "forty",
+    "fifty", "sixty", "seventy", "eighty", "ninety", "hundred", "thousand", "half", "quarter", "dozen",
+    "minute", "minutes", "hour", "hours", "litre", "litres", "liter", "liters", "percent",
+    "ek", "teen", "char", "chaar", "paanch", "panch", "chhe", "saat", "aath", "nau", "das", "bees", "tees", "sau",
+    "minat", "ghanta", "ghante",
+    "ایک", "دو", "تین", "چار", "پانچ", "چھ", "سات", "آٹھ", "نو", "دس", "بیس", "سو", "منٹ", "گھنٹہ", "گھنٹے", "لیٹر",
+    "एक", "दो", "तीन", "चार", "पांच", "छह", "सात", "आठ", "नौ", "दस", "मिनट", "घंटे", "लीटर",
+}
 
 Complete = Callable[[list[dict[str, Any]], list[dict[str, Any]]], tuple[dict[str, Any], str]]
 
@@ -49,7 +61,10 @@ def yes_no(text: str) -> str | None:
     words = re.findall(r"[\w✔✖]+", (text or "").lower())
     if not words or len(words) > 4:
         return None
-    has_yes, has_no = any(w in YES for w in words), any(w in NO for w in words)
+    answers = [w for w in words if w not in FILLER or w in YES]
+    if not answers or any(w not in YES and w not in NO for w in answers):
+        return None  # anything else ("ok block 2", "say yes") is a real sentence: the model reads it
+    has_yes, has_no = any(w in YES for w in answers), any(w in NO for w in answers)
     if has_yes == has_no:
         return None
     return "yes" if has_yes else "no"
@@ -59,6 +74,8 @@ def guard(text: str | None) -> str | None:
     """The model's own words, only if short and free of numbers (numbers come from code alone)."""
     text = (text or "").strip()
     if not text or len(text) > 250 or re.search(r"\d", text):
+        return None
+    if any(w in NUMBER_WORDS for w in re.findall(r"\w+", text.lower())):
         return None
     return text
 
@@ -128,7 +145,7 @@ def turn(session: Session, farm: Farm, user: User, lang: str, history: list[dict
     final_text = ""
     provider: str | None = None
     try:
-        for _ in range(MAX_TOOL_ROUNDS):
+        for _ in range(1):  # one round: the answer is the tools' templates
             message, provider = complete(messages, tools)
             calls = message.get("tool_calls") or []
             if not calls:
@@ -147,6 +164,9 @@ def turn(session: Session, farm: Farm, user: User, lang: str, history: list[dict
             break  # the answer is the tools' templates: no second model call needed
     except llm.LLMUnavailable as e:
         log.error("no language model available: %s", e)
+        return TurnResult(t("unavailable", lang), context={"pending": pending} if pending else {})
+    except Exception:  # a bug or a database hiccup must still give the worker a spoken answer
+        log.exception("assistant turn failed")
         return TurnResult(t("unavailable", lang), context={"pending": pending} if pending else {})
 
     confirm = next((r for r in results if r.kind == "confirm_answer"), None)
