@@ -66,3 +66,57 @@ export function SoilSprout({ status, className = '' }: { status: 'ok' | 'warn' |
     </svg>
   )
 }
+
+/** The Water tab's tank: a farm water tank on its base with a pipe and valve. The water rises to the real
+ *  reading once, then its surface keeps moving. Empty state: no water, dashed outline. */
+export function TankScene({ pct, className = '' }: { pct: number | null; className?: string }) {
+  const clip = `tank-scene-${useId().replace(/:/g, '')}`
+  const level = pct === null ? 0 : Math.max(0, Math.min(100, pct))
+  const low = pct !== null && pct < 25
+  // body inner area: y 62..232 (170 tall)
+  const y = 232 - (170 * level) / 100
+  return (
+    <svg viewBox="0 0 300 280" className={className} aria-hidden>
+      <defs>
+        <clipPath id={clip}><rect x="78" y="62" width="150" height="170" rx="22" /></clipPath>
+        <linearGradient id={`${clip}-w`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={low ? '#f3c27a' : '#a9dbf6'} />
+          <stop offset="100%" stopColor={low ? '#e09a3c' : '#6cbbe9'} />
+        </linearGradient>
+      </defs>
+      {/* ground, base and bushes */}
+      <ellipse cx="150" cy="262" rx="140" ry="12" fill="#e7d3ad" />
+      <path d="M30 262 C34 240 54 236 62 250 C66 236 84 238 86 256Z" fill="#7cb85a" />
+      <path d="M216 260 C220 236 244 232 252 248 C258 234 276 240 276 258Z" fill="#7cb85a" />
+      <path d="M44 262 C48 248 60 246 66 256Z" fill="#5c9e45" />
+      <rect x="66" y="232" width="174" height="26" rx="8" fill="#e9dfcc" />
+      <rect x="66" y="232" width="174" height="8" rx="4" fill="#f4ecdc" />
+      {/* pipe and valve */}
+      <path d="M78 214 H52 V86 Q52 70 68 70 H92" fill="none" stroke="#3f8a5c" strokeWidth="14" strokeLinecap="round" />
+      <rect x="40" y="168" width="24" height="12" rx="4" fill="#f2c14e" />
+      <rect x="47" y="156" width="10" height="14" rx="3" fill="#e0a92e" />
+      {/* tank body */}
+      <rect x="78" y="62" width="150" height="170" rx="22" fill="#fbf8f2"
+        stroke={pct === null ? '#c9bfae' : '#d9cfbd'} strokeWidth="3" strokeDasharray={pct === null ? '8 6' : undefined} />
+      {pct !== null && (
+        <g clipPath={`url(#${clip})`}>
+          <g style={{ transform: `translateY(${y}px)`, transition: 'transform 900ms var(--ease-out)' }}>
+            <g className="fill-up" style={{ ['--rise' as string]: '170px' }}>
+              <g className="wave" style={{ animationDuration: '5s' }}>
+                <path d="M60 0 Q80 -7 100 0 T140 0 T180 0 T220 0 T260 0 T300 0 T340 0 T380 0 T420 0 V200 H60Z" fill={`url(#${clip}-w)`} />
+              </g>
+            </g>
+          </g>
+        </g>
+      )}
+      {/* bands, highlight and level marks */}
+      <path d="M80 140 H226 M80 190 H226" stroke="#e6ddcc" strokeWidth="2" opacity="0.8" />
+      <rect x="92" y="74" width="12" height="140" rx="6" fill="#fff" opacity="0.6" />
+      {[88, 112, 136, 160, 184, 208].map((ly) => <path key={ly} d={`M212 ${ly} h-14`} stroke="#9aa39e" strokeWidth="3" strokeLinecap="round" />)}
+      {/* lid */}
+      <rect x="104" y="40" width="98" height="26" rx="10" fill="#2f6b4f" />
+      <rect x="104" y="40" width="98" height="8" rx="4" fill="#3f8a5c" />
+      <path d="M120 44 v18 M138 44 v18 M156 44 v18 M174 44 v18 M190 44 v18" stroke="#25563f" strokeWidth="2" opacity="0.6" />
+    </svg>
+  )
+}

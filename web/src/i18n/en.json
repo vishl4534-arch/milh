@@ -56,7 +56,17 @@
     "greet_morning": "Good morning",
     "greet_afternoon": "Good afternoon",
     "greet_evening": "Good evening",
-    "greet_night": "Good night"
+    "greet_night": "Good night",
+    "today": "Today",
+    "why": "Why this much?",
+    "saves": "saves {{l}}",
+    "startsAt": "starts {{time}}",
+    "soilSalt": "Soil salt (EC)",
+    "cropLimit": "Crop limit",
+    "nextLabel": "Next:",
+    "noAnnouncements": "No more announcements today",
+    "tabs": "Sections",
+    "lang": "Language"
   },
   "empty": {
     "noReading": "No reading yet",

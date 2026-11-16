@@ -202,7 +202,96 @@ html[lang="ar"] body {
   animation: art-in 1.4s var(--ease-out) both;
 }
 
+/* ---- Worker tablet: warm, airy, one job at a time (see DESIGN.md) -------------------------------- */
+.kiosk {
+  --font-kiosk: "Nunito", "Noto Sans", system-ui, sans-serif;
+  --k-bg: #f6f3ec;
+  --k-card: #ffffff;
+  --k-sand: #f1e6cf;
+  --k-sand-soft: #f7efdf;
+  --k-green: #2f6b4f;
+  --k-green-soft: #e3f0e6;
+  --k-ink: #1d2a24;
+  --k-muted: #6b746f;
+  min-height: 100dvh;
+  overflow-x: clip;
+  background:
+    radial-gradient(90% 60% at 100% 0%, rgb(234 217 181 / 0.35), transparent 60%),
+    radial-gradient(70% 50% at 0% 100%, rgb(79 157 105 / 0.08), transparent 60%),
+    var(--k-bg);
+  color: var(--k-ink);
+  font-family: var(--font-kiosk);
+}
+html[lang="ur"] .kiosk,
+html[lang="ar"] .kiosk {
+  font-family: var(--font-urdu);
+}
+.kiosk .num {
+  font-family: var(--font-kiosk);
+  font-stretch: 100%;
+  letter-spacing: -0.02em;
+}
+.k-card {
+  background: var(--k-card);
+  border-radius: 1.75rem;
+  box-shadow: 0 1px 0 rgb(29 42 36 / 0.04), 0 18px 40px -26px rgb(92 74 40 / 0.35);
+}
+
+/* Cards and rows arrive once, one after another. */
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(14px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.card-in {
+  animation: card-in 420ms var(--ease-out) both;
+}
+/* A tab's content slides in from the side it came from. */
+@keyframes panel-in {
+  from { opacity: 0; transform: translateX(var(--from, 18px)); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.panel-in {
+  animation: panel-in 260ms var(--ease-out) both;
+}
+/* Bars fill once when they appear. */
+@keyframes grow-x {
+  from { transform: scaleX(0.02); }
+  to { transform: scaleX(1); }
+}
+.grow-x {
+  transform-origin: 0 50%;
+  animation: grow-x 900ms var(--ease-out) both;
+}
+[dir="rtl"] .grow-x {
+  transform-origin: 100% 50%;
+}
+/* Water rises to its level once (dial and tank). */
+@keyframes fill-up {
+  from { transform: translateY(var(--rise, 120px)); }
+  to { transform: translateY(0); }
+}
+.fill-up {
+  animation: fill-up 1.2s var(--ease-out) both;
+}
+/* The tab pill glides to the chosen tab. */
+.tab-glide {
+  transition: transform 320ms var(--ease-in-out);
+}
+/* The dial's ring catches up smoothly as minutes pass. */
+.ring-glide {
+  transition: stroke-dashoffset 800ms var(--ease-out), stroke 300ms ease;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .card-in, .panel-in, .grow-x {
+    animation: fade-in 200ms ease both;
+  }
+  .fill-up {
+    animation: none;
+  }
+  .tab-glide, .ring-glide {
+    transition: none;
+  }
   .art-in {
     animation: fade-in 400ms ease both;
   }

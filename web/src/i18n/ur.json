@@ -56,7 +56,17 @@
     "greet_morning": "صبح بخیر",
     "greet_afternoon": "سہ پہر بخیر",
     "greet_evening": "شام بخیر",
-    "greet_night": "شب بخیر"
+    "greet_night": "شب بخیر",
+    "today": "آج",
+    "why": "اتنا پانی کیوں؟",
+    "saves": "{{l}} کی بچت",
+    "startsAt": "{{time}} پر شروع",
+    "soilSalt": "مٹی کا نمک (EC)",
+    "cropLimit": "فصل کی حد",
+    "nextLabel": "اگلا:",
+    "noAnnouncements": "آج مزید کوئی اعلان نہیں",
+    "tabs": "حصے",
+    "lang": "زبان"
   },
   "empty": {
     "noReading": "ابھی کوئی ریڈنگ نہیں",

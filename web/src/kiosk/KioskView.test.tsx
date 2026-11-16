@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { expect, test, vi } from 'vitest'
 import { KioskView } from './KioskView'
 import { bundleFixture } from '../test/fixtures'
@@ -18,6 +18,7 @@ test('shows "No test yet" when soil status none', () => {
   b.blocks[0].soil = { ece: null, ph: null, moisture_vwc: null, tested_on: null, status: 'none', source: null }
   b.blocks[0].next_test_due = null
   view(b)
+  fireEvent.click(screen.getByRole('tab', { name: /Soil/ }))
   expect(within(screen.getByRole('region', { name: 'Soil' })).getByText('No test yet')).toBeInTheDocument()
 })
 
@@ -54,6 +55,7 @@ test('empty tank and water readings show empty state, not zero', () => {
   b.tanks[0] = { ...b.tanks[0], level_pct: null, volume_l: null, measured_at: null, source: null }
   b.sources[0] = { ...b.sources[0], ec: null, ec_measured_at: null, trend: null, stale: true }
   view(b)
+  fireEvent.click(screen.getByRole('tab', { name: /Water/ }))
   const water = screen.getByRole('region', { name: 'Water' })
   expect(within(water).getAllByText('No reading yet').length).toBeGreaterThanOrEqual(2)
   expect(within(water).queryByText('0%')).toBeNull()
