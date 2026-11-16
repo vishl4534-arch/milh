@@ -7,7 +7,8 @@ test('signed-out visitors land on the owner sign in', async () => {
   setToken(null)
   window.history.pushState({}, '', '/owner')
   render(<App />)
-  expect(await screen.findByRole('heading', { name: 'Owner sign in' })).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'Welcome back' })).toBeInTheDocument()
+  expect(screen.getByText('Owner sign in')).toBeInTheDocument()
 })
 
 test('farm tablet route asks for the tablet key and PIN', async () => {

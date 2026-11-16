@@ -90,7 +90,19 @@
     "kioskTitle": "Farm tablet",
     "deviceKey": "Tablet key (from the owner)",
     "pin": "Your PIN",
-    "kioskSubmit": "Open"
+    "kioskSubmit": "Open",
+    "welcome": "Welcome back",
+    "subtitle": "Sign in to see today's water plan for your farms.",
+    "show": "Show password",
+    "hide": "Hide password",
+    "kioskSubtitle": "Enter the tablet key from the farm owner and your PIN.",
+    "toKiosk": "Setting up a farm tablet?",
+    "toKioskLink": "Tablet sign in",
+    "toOwner": "Farm owner?",
+    "toOwnerLink": "Owner sign in",
+    "artLabel": "Milh · desert farms",
+    "artTitle": "Every drop, decided.",
+    "artBody": "Each morning Milh turns live weather and your farm's own readings into one watering plan for every block."
   },
   "fallback": {
     "no_soil_test": "No soil test yet",

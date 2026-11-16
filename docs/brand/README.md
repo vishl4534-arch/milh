@@ -17,3 +17,7 @@
 - `web/public/milh.svg`: the app icon (sand drop on a green rounded square)
 - `web/src/brand/Logo.tsx`: `MilhLogo` and `MilhMark` for the app; keep them in step with the SVG files
 - `milh-brand-board.webp`, `milh-logo-concept.webp`: the generated concept images the SVGs were redrawn from (for slides)
+
+## Sign-in art
+
+The sign-in pages show `web/public/login-art.webp` on the left (portrait, about 2:3, at least 1400 × 2100). Until that file exists, the animated farm sky is shown instead. Keep the lower 40% of the picture dark and calm: the headline sits there. The prompts used to make it are in the project chat; the brief is "flowing desert-dune ribbons turning into water, in sand, gold, palm green and water blue, on deep green-black".
