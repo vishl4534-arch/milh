@@ -13,7 +13,7 @@ import { KioskView } from './KioskView'
 import { ReadingEntry } from './ReadingEntry'
 import { assistantStatus } from './voice/api'
 import { VoiceMode } from './voice/VoiceMode'
-import { CropArt } from './art/CropArt'
+import { MilhLogo, MilhMark } from '../brand/Logo'
 import { SkyScene } from './scene/SkyScene'
 
 export function KioskApp({ farmId }: { farmId?: string }) {
@@ -92,7 +92,7 @@ export function KioskApp({ farmId }: { farmId?: string }) {
     return (
       <div className="grid min-h-dvh place-items-center bg-salt">
         <span className="flex flex-col items-center gap-3 text-xl text-ink-soft">
-          <CropArt crop="date_palm" sway className="h-28 w-24" />
+          <MilhMark className="rise-in h-24 w-20" />
           {t('common.loading')}
         </span>
       </div>
@@ -122,6 +122,7 @@ export function KioskApp({ farmId }: { farmId?: string }) {
               </span>
             </span>
             <span className="rise-in rounded-3xl bg-white/90 px-8 py-4 shadow-lg" style={{ animationDelay: '500ms' }}>
+              <MilhLogo className="mx-auto mb-2 h-10 w-auto" />
               <span className="block font-display text-4xl font-bold">{t('kiosk.tapToStart')}</span>
               <span className="mt-1 block text-lg text-ink-soft">{data.bundle.farm.name} · {t('kiosk.tapToStartHint')}</span>
             </span>

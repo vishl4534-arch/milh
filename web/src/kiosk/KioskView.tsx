@@ -9,6 +9,7 @@ import { CropArt } from './art/CropArt'
 import { DropIcon, SoilSprout, TankArt } from './art/Tank'
 import { PipeBar } from './PipeBar'
 import { SkyScene } from './scene/SkyScene'
+import { MilhMark } from '../brand/Logo'
 
 const LANG_LABEL: Record<string, string> = { en: 'EN', ur: 'اردو', ar: 'عربي', hi: 'हिंदी' }
 const FORECAST_STALE_H = 6
@@ -148,12 +149,15 @@ function Header({ state, lang, now, onLang }: KioskViewProps) {
         sunset={b.sun?.sunset ? Date.parse(b.sun.sunset) : null}>
         <div className="flex h-full min-h-[13.5rem] flex-col justify-between p-4">
           <div className="flex flex-wrap items-start gap-3">
-            <div className="rise-in rounded-2xl bg-white/85 px-4 py-2 shadow-sm">
-              <div className="text-sm font-semibold text-palm">{t(greetingKey(now, tz))}</div>
-              <div className="font-display text-2xl font-bold leading-tight">{b.farm.name}</div>
-              <div className="text-sm text-ink-soft">
-                {dayMonth(now, tz)} · <span className="num text-base font-semibold text-ink">{hhmm(now, tz)}</span>
-                {b.farm.example_label && <span className="ms-2 rounded bg-salt px-1.5 py-0.5 text-xs">example setup</span>}
+            <div className="rise-in flex items-center gap-3 rounded-2xl bg-white/85 py-2 ps-3 pe-4 shadow-sm">
+              <MilhMark label="Milh" className="h-12 w-10 shrink-0" />
+              <div>
+                <div className="text-sm font-semibold text-palm">{t(greetingKey(now, tz))}</div>
+                <div className="font-display text-2xl font-bold leading-tight">{b.farm.name}</div>
+                <div className="text-sm text-ink-soft">
+                  {dayMonth(now, tz)} · <span className="num text-base font-semibold text-ink">{hhmm(now, tz)}</span>
+                  {b.farm.example_label && <span className="ms-2 rounded bg-salt px-1.5 py-0.5 text-xs">example setup</span>}
+                </div>
               </div>
             </div>
             <div className="ms-auto flex items-center gap-2">

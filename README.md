@@ -1,4 +1,8 @@
+<p align="center"><img src="web/public/milh-logo.svg" alt="Milh" width="320"></p>
+
 # Milh — water decisions for salty desert farms
+
+*Every drop, decided.*
 
 Milh (ملح, "salt") is a farm operations platform for desert farms that irrigate from brackish wells.
 Each morning it turns live weather and the farm's own readings into one decision per block: **how many

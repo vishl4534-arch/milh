@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { api, setToken } from '../api/client'
+import { MilhLogo } from '../brand/Logo'
 
 const DEVICE_KEY = 'milh.deviceKey'
 
@@ -11,7 +12,7 @@ function Shell({ title, children }: { title: string; children: React.ReactNode }
     <div className="grid min-h-dvh place-items-center bg-salt p-4">
       <div className="w-full max-w-sm">
         <div className="mb-6">
-          <div className="font-display text-4xl font-black tracking-tight">Milh <span className="font-urdu text-3xl font-normal text-ink-soft">ملح</span></div>
+          <div className="flex items-center gap-4"><MilhLogo className="h-14 w-auto" /><span className="font-urdu text-3xl leading-[2.2] text-ink-soft" lang="ur">ملح</span></div>
           <div className="text-ink-soft">{t('app.tagline')}</div>
         </div>
         <div className="rounded-3xl bg-panel p-6 ring-1 ring-line">

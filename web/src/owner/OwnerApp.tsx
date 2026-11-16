@@ -11,6 +11,7 @@ import { ReportsTab } from './ReportsTab'
 import { SaltClockTab } from './SaltClockTab'
 import { SetupTab } from './SetupTab'
 import { TabNav } from './TabNav'
+import { MilhLogo } from '../brand/Logo'
 
 export function OwnerApp() {
   return (
@@ -92,7 +93,7 @@ function FarmDashboard() {
     <div className="min-h-dvh">
       <header className="border-b border-line bg-panel">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-4 px-4 py-3">
-          <div className="font-display text-2xl font-black">Milh</div>
+          <MilhLogo className="h-9 w-auto" />
           <div className="min-w-0">
             <div className="font-semibold">{f.name}</div>
             {f.example_label && <div className="max-w-xl truncate text-xs text-ink-soft" title={f.example_label}>{f.example_label}</div>}
