@@ -20,4 +20,4 @@
 
 ## Sign-in art
 
-The sign-in pages show `web/public/login-art.webp` on the left (portrait, about 2:3, at least 1400 × 2100). Until that file exists, the animated farm sky is shown instead. Keep the lower 40% of the picture dark and calm: the headline sits there. The prompts used to make it are in the project chat; the brief is "flowing desert-dune ribbons turning into water, in sand, gold, palm green and water blue, on deep green-black".
+The tablet sign-in shows `web/public/login-art.webp` on the left and the owner sign-in shows `web/public/login-art-owner.webp` (falling back to the shared picture until it exists) (portrait, about 2:3, at least 1400 × 2100). Until that file exists, the animated farm sky is shown instead. Keep the lower 40% of the picture dark and calm: the headline sits there. The prompts used to make it are in the project chat; the brief is "flowing desert-dune ribbons turning into water, in sand, gold, palm green and water blue, on deep green-black".

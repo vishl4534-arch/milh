@@ -8,12 +8,14 @@ import { SkyScene } from '../kiosk/scene/SkyScene'
 
 const DEVICE_KEY = 'milh.deviceKey'
 
-/** The art half: the brand picture from web/public/login-art.webp, with the headline over it. Until that
- *  picture exists (or if it fails to load) the farm's living sky is shown instead, so it never looks empty. */
-function ArtPanel() {
+/** The art half: a brand picture with the headline over it. Each page names its pictures in order of
+ *  preference (its own, then the shared one); if none loads, the farm's living sky is shown instead, so the
+ *  panel never looks empty. */
+function ArtPanel({ sources }: { sources: string[] }) {
   const { t, i18n } = useTranslation()
   const [now] = useState(() => Date.now())
   const [art, setArt] = useState<'loading' | 'ok' | 'none'>('loading')
+  const [pick, setPick] = useState(0)
   const serif = i18n.language === 'ur' ? 'font-urdu' : 'font-serif'
   return (
     <aside className="relative hidden overflow-hidden rounded-[2rem] bg-[#0e1f18] md:block">
@@ -22,8 +24,11 @@ function ArtPanel() {
           <SkyScene tall now={now} sunrise={null} sunset={null} tz="Asia/Muscat" />
         </div>
       )}
-      <img src="/login-art.webp" alt="" onLoad={() => setArt('ok')} onError={() => setArt('none')}
-        className={`absolute inset-0 h-full w-full object-cover ${art === 'ok' ? 'art-in' : 'opacity-0'}`} />
+      {pick < sources.length && (
+        <img key={sources[pick]} src={sources[pick]} alt="" onLoad={() => setArt('ok')}
+          onError={() => { if (pick + 1 < sources.length) setPick(pick + 1); else setArt('none') }}
+          className={`absolute inset-0 h-full w-full object-cover ${art === 'ok' ? 'art-in' : 'opacity-0'}`} />
+      )}
       <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-black/25" />
 
       <div className="absolute inset-x-10 top-10 flex items-center gap-5 text-xs font-semibold uppercase tracking-[0.3em] text-white/90">
@@ -40,7 +45,10 @@ function ArtPanel() {
   )
 }
 
+const SHARED_ART = '/login-art.webp'
+
 interface ShellProps {
+  art: string[]
   eyebrow?: string
   title: string
   subtitle: string
@@ -48,12 +56,12 @@ interface ShellProps {
   children: ReactNode
 }
 
-function Shell({ eyebrow, title, subtitle, footer, children }: ShellProps) {
+function Shell({ art, eyebrow, title, subtitle, footer, children }: ShellProps) {
   const { i18n } = useTranslation()
   const serif = i18n.language === 'ur' ? 'font-urdu' : 'font-serif'
   return (
     <div className="grid min-h-dvh gap-3 bg-panel p-3 md:grid-cols-2">
-      <ArtPanel />
+      <ArtPanel sources={art} />
       <main className="flex min-h-[calc(100dvh-1.5rem)] flex-col px-4 py-4 sm:px-10">
         <div className="flex justify-center"><MilhLogo className="h-10 w-auto" /></div>
         <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center py-10">
@@ -118,7 +126,7 @@ export function OwnerLogin() {
     }
   }
   return (
-    <Shell eyebrow={t('login.title')} title={t('login.welcome')} subtitle={t('login.subtitle')}
+    <Shell art={['/login-art-owner.webp', SHARED_ART]} eyebrow={t('login.title')} title={t('login.welcome')} subtitle={t('login.subtitle')}
       footer={<>{t('login.toKiosk')} <Link to="/kiosk/login" className="font-semibold text-ink underline-offset-4 hover:underline">{t('login.toKioskLink')}</Link></>}>
       <form onSubmit={submit} className="flex flex-col gap-5">
         <label className={label}>{t('login.email')}
@@ -159,7 +167,7 @@ export function KioskLogin() {
     }
   }
   return (
-    <Shell title={t('login.kioskTitle')} subtitle={t('login.kioskSubtitle')}
+    <Shell art={[SHARED_ART]} title={t('login.kioskTitle')} subtitle={t('login.kioskSubtitle')}
       footer={<>{t('login.toOwner')} <Link to="/login" className="font-semibold text-ink underline-offset-4 hover:underline">{t('login.toOwnerLink')}</Link></>}>
       <form onSubmit={submit} className="flex flex-col gap-5">
         <label className={label}>{t('login.deviceKey')}
