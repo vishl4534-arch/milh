@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+/* Milh tokens: high-contrast "salt white" for screens read in full desert sun.
+   Tap colours come from the farm's own configuration and are the only saturated colour on a run. */
+@theme {
+  --color-salt: #f7f8f6;
+  --color-panel: #ffffff;
+  --color-ink: #1b2421;
+  --color-ink-soft: #4a5752;
+  --color-line: #d9ded9;
+  --color-palm: #2f6b4f;
+  --color-palm-deep: #234f3b;
+  --color-dune: #b7791f;
+  --color-brine: #b42318;
+  --color-sky: #1d4ed8;
+  --font-display: "Archivo", "Noto Sans", system-ui, sans-serif;
+  --font-body: "Noto Sans", system-ui, sans-serif;
+  --font-urdu: "Noto Nastaliq Urdu", "Noto Sans Arabic", serif;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  background: var(--color-salt);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+html[lang="ur"] body,
+html[lang="ar"] body {
+  font-family: var(--font-urdu);
+  line-height: 1.9;
+}
+
+.num {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  font-stretch: 85%;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-sky);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

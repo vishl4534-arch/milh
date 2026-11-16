@@ -1,0 +1,38 @@
+"""Application settings, loaded from environment / .env."""
+
+from __future__ import annotations
+
+import logging
+import secrets
+from functools import lru_cache
+from pathlib import Path
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+
+    # SQLite by default so the platform runs on a laptop without Docker; Postgres in compose/CI.
+    database_url: str = "sqlite:///./milh.db"
+    jwt_secret: str = ""  # empty -> a random per-process secret (dev only); set in .env
+    elevenlabs_api_key: str | None = None
+    elevenlabs_model_id: str = "eleven_multilingual_v2"
+    elevenlabs_voice_ids: dict[str, str] = {}
+    gemini_api_key: str | None = None
+    gemini_model: str = "gemini-2.5-flash"
+    media_dir: Path = Path("./media")
+    mqtt_url: str = "mqtt://localhost:1883"
+    cors_origins: list[str] = ["http://localhost:5173"]
+
+
+@lru_cache
+def get_settings() -> Settings:
+    s = Settings()
+    if len(s.jwt_secret) < 32:
+        logging.getLogger(__name__).warning(
+            "JWT_SECRET missing or shorter than 32 chars; using a random secret for this process. "
+            "Logins will not survive a restart. Set JWT_SECRET in .env."
+        )
+        s.jwt_secret = secrets.token_urlsafe(48)
+    return s

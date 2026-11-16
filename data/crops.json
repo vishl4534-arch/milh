@@ -1,0 +1,56 @@
+[
+  {
+    "key": "tomato",
+    "names": {"en": "Tomato", "ur": "ٹماٹر", "ar": "طماطم", "hi": "टमाटर"},
+    "perennial": false,
+    "kc_ini": 0.6, "kc_mid": 1.15, "kc_end": 0.8,
+    "stage_days": [35, 40, 50, 30],
+    "salt_a": 2.5, "salt_b": 9.9,
+    "citation": "Kc and stage lengths: FAO-56 (Allen et al. 1998) Tables 11-12, tomato (California desert row). Salt tolerance: FAO-29 (Ayers & Westcot 1985) Table 4. VERIFY against source tables."
+  },
+  {
+    "key": "cucumber",
+    "names": {"en": "Cucumber", "ur": "کھیرا", "ar": "خيار", "hi": "खीरा"},
+    "perennial": false,
+    "kc_ini": 0.6, "kc_mid": 1.0, "kc_end": 0.75,
+    "stage_days": [20, 30, 40, 15],
+    "salt_a": 2.5, "salt_b": 13.0,
+    "citation": "Kc and stage lengths: FAO-56 Tables 11-12, cucumber (arid region row). Salt tolerance: FAO-29 Table 4. VERIFY against source tables."
+  },
+  {
+    "key": "sweet_pepper",
+    "names": {"en": "Sweet pepper", "ur": "شملہ مرچ", "ar": "فلفل حلو", "hi": "शिमला मिर्च"},
+    "perennial": false,
+    "kc_ini": 0.6, "kc_mid": 1.05, "kc_end": 0.9,
+    "stage_days": [25, 35, 40, 20],
+    "salt_a": 1.5, "salt_b": 14.0,
+    "citation": "Kc and stage lengths: FAO-56 Tables 11-12, sweet pepper. Salt tolerance: FAO-29 Table 4. VERIFY against source tables."
+  },
+  {
+    "key": "date_palm",
+    "names": {"en": "Date palm", "ur": "کھجور", "ar": "نخيل التمر", "hi": "खजूर"},
+    "perennial": true,
+    "kc_ini": 0.9, "kc_mid": 0.95, "kc_end": 0.95,
+    "stage_days": [0, 0, 0, 0],
+    "salt_a": 4.0, "salt_b": 3.6,
+    "citation": "Kc: FAO-56 Table 12, date palms. Salt tolerance: FAO-29 Table 4. VERIFY against source tables."
+  },
+  {
+    "key": "barley",
+    "names": {"en": "Barley", "ur": "جو", "ar": "شعير", "hi": "जौ"},
+    "perennial": false,
+    "kc_ini": 0.3, "kc_mid": 1.15, "kc_end": 0.25,
+    "stage_days": [15, 25, 50, 30],
+    "salt_a": 8.0, "salt_b": 5.0,
+    "citation": "Kc and stage lengths: FAO-56 Tables 11-12, barley. Salt tolerance: FAO-29 Table 4. VERIFY against source tables."
+  },
+  {
+    "key": "alfalfa",
+    "names": {"en": "Alfalfa", "ur": "رجکا", "ar": "برسيم حجازي", "hi": "रिजका"},
+    "perennial": true,
+    "kc_ini": 0.4, "kc_mid": 0.95, "kc_end": 0.9,
+    "stage_days": [0, 0, 0, 0],
+    "salt_a": 2.0, "salt_b": 7.3,
+    "citation": "Kc: FAO-56 Table 12, alfalfa hay (averaged over cuttings, treated as perennial). Salt tolerance: FAO-29 Table 4. VERIFY against source tables."
+  }
+]

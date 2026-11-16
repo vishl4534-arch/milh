@@ -1,0 +1,69 @@
+{
+  "app": { "name": "Milh", "tagline": "Water decisions for salty desert farms" },
+  "common": {
+    "save": "Save", "cancel": "Cancel", "loading": "Loading…", "retry": "Try again", "minutes": "min",
+    "source": "Source", "ago": "{{age}} ago", "listen": "Listen", "language": "Language", "signOut": "Sign out"
+  },
+  "time": { "justNow": "just now", "minutes": "{{n}} min", "hours": "{{n}} h", "days": "{{n}} d" },
+  "kiosk": {
+    "tapToStart": "Tap to start",
+    "tapToStartHint": "Turns on the speaker for today's announcements",
+    "soundBlocked": "Sound is off. Tap here to turn it on.",
+    "offline": "Offline · data from {{time}}",
+    "now": "Now",
+    "next": "Next",
+    "later": "Later today",
+    "allDone": "All watering done for today",
+    "noPlan": "No watering plan yet for today",
+    "done": "Done",
+    "doneSaved": "Marked as done",
+    "unconfirmed": "Not confirmed yet",
+    "notToday": "Not today's plan ({{day}}). Connect to the internet to update.",
+    "skipRain": "No watering: rain",
+    "skipNoNeed": "No watering needed",
+    "flush": "Long watering to wash out salt",
+    "instead": "usual {{n}} min",
+    "water": "Water",
+    "soil": "Soil",
+    "tank": "Tank",
+    "salt": "Salt",
+    "nextTest": "Next test",
+    "testDue": "Test due",
+    "addReading": "Add reading",
+    "announcements": "Announcements",
+    "sunrise": "Sunrise",
+    "sunset": "Sunset",
+    "forecastAge": "Forecast {{age}} old",
+    "habitFallback": "Usual routine (missing data)"
+  },
+  "empty": {
+    "noReading": "No reading yet",
+    "noTest": "No test yet",
+    "noForecast": "No forecast yet",
+    "addOne": "Add one"
+  },
+  "status": { "ok": "OK", "warn": "Rising", "high": "Too salty", "none": "Not tested" },
+  "entry": {
+    "title": "Add a reading",
+    "water_ec": "Water salt (EC)",
+    "tank_level_pct": "Tank level",
+    "flow_l": "Water meter",
+    "pickSource": "Which water?",
+    "pickTank": "Which tank?",
+    "send": "Save reading",
+    "saved": "Saved",
+    "queued": "Saved on this tablet. It will send when online.",
+    "tooHigh": "That number is too high"
+  },
+  "login": {
+    "title": "Owner sign in", "email": "Email", "password": "Password", "submit": "Sign in",
+    "kioskTitle": "Farm tablet", "deviceKey": "Tablet key (from the owner)", "pin": "Your PIN", "kioskSubmit": "Open"
+  },
+  "fallback": {
+    "no_soil_test": "No soil test yet",
+    "no_forecast": "No forecast: usual routine used",
+    "no_water_ec": "No water salt reading: usual routine used",
+    "no_sun_times": "No sunrise time: default schedule",
+    "water_ec_stale": "Water salt reading is old"
+  }
+}
