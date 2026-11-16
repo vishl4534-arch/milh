@@ -38,6 +38,16 @@ services:
     volumes: [media:/data/media]
     depends_on:
       db: { condition: service_healthy }
+  mqtt-bridge:
+    build: ./backend
+    command: ["python", "-m", "milh.ingestion.mqtt_bridge"]
+    env_file: ./backend/.env
+    environment:
+      DATABASE_URL: postgresql+psycopg://milh:milh@db:5432/milh
+      MQTT_URL: mqtt://mqtt:1883
+    depends_on:
+      db: { condition: service_healthy }
+      mqtt: { condition: service_started }
   web:
     profiles: ["dev"]
     image: node:20
