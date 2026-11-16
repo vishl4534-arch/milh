@@ -269,29 +269,34 @@ export function VoiceMode({ lang, farmId, onClose }: Props) {
 
   return (
     <div role="dialog" aria-modal="true" aria-label={t('kiosk.ask')}
-      className="fixed inset-0 z-30 flex flex-col items-center justify-between gap-4 bg-ink p-6 text-salt">
+      className="fade-in fixed inset-0 z-30 flex flex-col items-center justify-between gap-4 bg-[radial-gradient(ellipse_at_50%_35%,#2f6b4f_0%,#1b2421_70%)] p-6 text-salt">
       <div className="flex w-full justify-end">
         <button type="button" onClick={onClose} aria-label={t('voice.close')}
           className="grid size-14 place-items-center rounded-full bg-salt/10 text-3xl"><Cross /></button>
       </div>
       <div className="flex flex-col items-center gap-6 text-center">
-        <div aria-hidden className="grid size-48 place-items-center rounded-full bg-palm transition-transform duration-150"
-          style={{ transform: `scale(${1 + level * 0.35})` }}>
-          <Speaker className="text-7xl" />
+        <div className="relative grid size-56 place-items-center">
+          {state === 'listening' && [0, 0.8, 1.6].map((d) => (
+            <span key={d} aria-hidden className="ring absolute inset-4 rounded-full bg-leaf" style={{ animationDelay: `${d}s` }} />
+          ))}
+          <div aria-hidden className="sheet-in relative grid size-48 place-items-center rounded-full bg-[radial-gradient(circle_at_35%_30%,#5fae78,#2f6b4f)] shadow-[0_20px_60px_-20px_rgba(79,157,105,.9)] transition-transform duration-150"
+            style={{ transform: `scale(${1 + level * 0.35})` }}>
+            <Speaker className="text-7xl" />
+          </div>
         </div>
         <p role="status" className="text-2xl font-semibold">{label[state]}</p>
         {last && (
           <div className="max-w-3xl space-y-3" aria-live="polite">
             {last.heard && <p className="text-xl text-salt/70">“{last.heard}”</p>}
-            <p className="text-2xl leading-relaxed md:text-3xl">{last.reply}</p>
+            <p key={last.reply} className="rise-in text-2xl leading-relaxed md:text-3xl">{last.reply}</p>
           </div>
         )}
         {pending && (
           <div className="flex gap-4">
             <button type="button" onClick={() => void ask({ text: 'yes' })} disabled={busy} aria-label={t('voice.yes')}
-              className="grid h-20 w-32 place-items-center rounded-2xl bg-palm text-5xl disabled:opacity-40"><Check /></button>
+              className="press pop grid h-20 w-32 place-items-center rounded-2xl bg-palm text-5xl disabled:opacity-40"><Check /></button>
             <button type="button" onClick={() => void ask({ text: 'no' })} disabled={busy} aria-label={t('voice.no')}
-              className="grid h-20 w-32 place-items-center rounded-2xl bg-brine text-5xl disabled:opacity-40"><Cross /></button>
+              className="press pop grid h-20 w-32 place-items-center rounded-2xl bg-brine text-5xl disabled:opacity-40"><Cross /></button>
           </div>
         )}
       </div>

@@ -13,6 +13,8 @@ import { KioskView } from './KioskView'
 import { ReadingEntry } from './ReadingEntry'
 import { assistantStatus } from './voice/api'
 import { VoiceMode } from './voice/VoiceMode'
+import { CropArt } from './art/CropArt'
+import { SkyScene } from './scene/SkyScene'
 
 export function KioskApp({ farmId }: { farmId?: string }) {
   const { t, i18n } = useTranslation()
@@ -86,25 +88,45 @@ export function KioskApp({ farmId }: { farmId?: string }) {
     }
   }, [error, farmId, navigate])
 
-  if (isLoading) return <div className="grid min-h-dvh place-items-center text-2xl">{t('common.loading')}</div>
+  if (isLoading) {
+    return (
+      <div className="grid min-h-dvh place-items-center bg-salt">
+        <span className="flex flex-col items-center gap-3 text-xl text-ink-soft">
+          <CropArt crop="date_palm" sway className="h-28 w-24" />
+          {t('common.loading')}
+        </span>
+      </div>
+    )
+  }
   if (error || !data) {
     return (
       <div className="grid min-h-dvh place-items-center gap-4 p-6 text-center">
         <p className="text-xl">{error instanceof Error ? error.message : t('kiosk.noPlan')}</p>
-        <button type="button" className="rounded-xl bg-ink px-6 py-3 text-salt" onClick={() => refetch()}>{t('common.retry')}</button>
+        <button type="button" className="press rounded-xl bg-ink px-6 py-3 text-salt" onClick={() => refetch()}>{t('common.retry')}</button>
       </div>
     )
   }
 
   if (!unlocked) {
+    // The first tap of the day (it also lets the browser play sound): the sun comes up over the farm.
+    const sun = data.bundle.sun
     return (
-      <button type="button" onClick={() => { player.unlock(); setUnlocked(true) }}
-        className="grid min-h-dvh w-full place-items-center bg-ink text-salt">
-        <span className="flex flex-col items-center gap-4">
-          <span className="grid size-40 place-items-center rounded-full bg-palm text-7xl"><Speaker /></span>
-          <span className="font-display text-4xl font-bold">{t('kiosk.tapToStart')}</span>
-          <span className="text-lg text-salt/70">{t('kiosk.tapToStartHint')}</span>
-        </span>
+      <button type="button" onClick={() => { player.unlock(); setUnlocked(true) }} className="block min-h-dvh w-full p-3 text-ink">
+        <SkyScene tall now={now} tz={data.bundle.farm.timezone}
+          sunrise={sun?.sunrise ? Date.parse(sun.sunrise) : null} sunset={sun?.sunset ? Date.parse(sun.sunset) : null}>
+          <span className="flex min-h-[calc(100dvh-1.5rem)] flex-col items-center justify-center gap-5 px-6 pb-24 text-center">
+            <span className="sun-rise relative grid size-44 place-items-center">
+              <span aria-hidden className="ring absolute inset-0 rounded-full bg-sun" />
+              <span className="relative grid size-44 place-items-center rounded-full bg-sun text-7xl text-ink shadow-[0_20px_50px_-15px_rgba(183,121,31,.9)]">
+                <Speaker />
+              </span>
+            </span>
+            <span className="rise-in rounded-3xl bg-white/90 px-8 py-4 shadow-lg" style={{ animationDelay: '500ms' }}>
+              <span className="block font-display text-4xl font-bold">{t('kiosk.tapToStart')}</span>
+              <span className="mt-1 block text-lg text-ink-soft">{data.bundle.farm.name} · {t('kiosk.tapToStartHint')}</span>
+            </span>
+          </span>
+        </SkyScene>
       </button>
     )
   }

@@ -51,7 +51,12 @@
     "sunset": "غروب",
     "forecastAge": "پیشگوئی {{age}} پرانی",
     "habitFallback": "معمول کا وقت (ڈیٹا نہیں)",
-    "ask": "پوچھیں"
+    "ask": "پوچھیں",
+    "left": "{{n}} منٹ باقی",
+    "greet_morning": "صبح بخیر",
+    "greet_afternoon": "سہ پہر بخیر",
+    "greet_evening": "شام بخیر",
+    "greet_night": "شب بخیر"
   },
   "empty": {
     "noReading": "ابھی کوئی ریڈنگ نہیں",

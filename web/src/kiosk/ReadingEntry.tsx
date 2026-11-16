@@ -74,8 +74,8 @@ export function ReadingEntry({ bundle, lang, onClose, onSaved }: Props) {
 
   return (
     <div role="dialog" aria-modal="true" aria-label={t('entry.title')}
-      className="fixed inset-0 z-20 grid place-items-center bg-ink/60 p-4">
-      <div className="w-full max-w-3xl rounded-3xl bg-panel p-5 shadow-xl">
+      className="fade-in fixed inset-0 z-20 grid place-items-center bg-ink/60 p-4">
+      <div className="sheet-in w-full max-w-3xl rounded-[2rem] bg-panel p-5 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-display text-2xl font-bold">{t('entry.title')}</h2>
           <button type="button" onClick={onClose} aria-label={t('common.cancel')} className="text-3xl"><Cross /></button>
@@ -85,7 +85,7 @@ export function ReadingEntry({ bundle, lang, onClose, onSaved }: Props) {
             <div className="grid grid-cols-2 gap-2">
               {(['water_ec', 'tank_level_pct'] as Metric[]).map((m) => (
                 <button key={m} type="button" onClick={() => switchMetric(m)} aria-pressed={metric === m}
-                  className={`rounded-xl px-3 py-3 font-semibold ring-1 ring-line ${metric === m ? 'bg-ink text-salt' : 'bg-salt'}`}>
+                  className={`press rounded-xl px-3 py-3 font-semibold ring-1 ring-line ${metric === m ? 'bg-ink text-salt' : 'bg-salt'}`}>
                   {t(`entry.${m}`)}
                 </button>
               ))}
@@ -94,7 +94,7 @@ export function ReadingEntry({ bundle, lang, onClose, onSaved }: Props) {
             <div className="flex flex-wrap gap-2">
               {targets.map((x) => (
                 <button key={x.id} type="button" onClick={() => setTarget(x.id)} aria-pressed={target === x.id}
-                  className={`flex items-center gap-2 rounded-xl px-3 py-3 text-lg ring-2 ${target === x.id ? 'ring-ink' : 'ring-line'}`}>
+                  className={`press flex items-center gap-2 rounded-xl px-3 py-3 text-lg ring-2 ${target === x.id ? 'ring-ink' : 'ring-line'}`}>
                   <span className="size-6 rounded-full" style={{ background: x.color }} /> {x.label}
                 </button>
               ))}
@@ -111,7 +111,7 @@ export function ReadingEntry({ bundle, lang, onClose, onSaved }: Props) {
             <NumberPad value={value} onChange={(v) => { setValue(v); setStatus('idle') }} max={LIMITS[metric].max}
               decimals={LIMITS[metric].decimals} />
             <button type="button" onClick={save} disabled={!target || value === '' || status === 'saving'}
-              className="rounded-2xl bg-palm py-4 text-xl font-bold text-white disabled:opacity-40">
+              className="press rounded-2xl bg-palm py-4 text-xl font-bold text-white disabled:opacity-40">
               {t('entry.send')}
             </button>
           </div>

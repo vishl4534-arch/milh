@@ -51,7 +51,12 @@
     "sunset": "Sunset",
     "forecastAge": "Forecast {{age}} old",
     "habitFallback": "Usual routine (missing data)",
-    "ask": "Ask"
+    "ask": "Ask",
+    "left": "{{n}} min left",
+    "greet_morning": "Good morning",
+    "greet_afternoon": "Good afternoon",
+    "greet_evening": "Good evening",
+    "greet_night": "Good night"
   },
   "empty": {
     "noReading": "No reading yet",
