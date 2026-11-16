@@ -1,13 +1,22 @@
 /// <reference types="vitest/config" />
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
+import basicSsl from '@vitejs/plugin-basic-ssl'
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
-export default defineConfig({
+const proxy = {
+  '/api': 'http://localhost:8000',
+  '/media': 'http://localhost:8000',
+}
+
+// `--mode tablet` serves over HTTPS to the whole Wi-Fi network, so a real tablet can use the microphone,
+// work offline and be installed (browsers allow those only on HTTPS or on the machine itself).
+export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     tailwindcss(),
+    ...(mode === 'tablet' ? [basicSsl({ name: 'milh-tablet', domains: ['*'] })] : []),
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
@@ -35,14 +44,16 @@ export default defineConfig({
     }),
   ],
   server: {
-    proxy: {
-      '/api': 'http://localhost:8000',
-      '/media': 'http://localhost:8000',
-    },
+    proxy,
+    host: mode === 'tablet' ? true : undefined,
+  },
+  preview: {
+    proxy,
+    host: mode === 'tablet' ? true : undefined,
   },
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     css: false,
   },
-})
+}))

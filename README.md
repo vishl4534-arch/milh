@@ -81,7 +81,7 @@ Keys go only in `backend/.env`. That file is git-ignored and the browser never s
 
 ## Voice assistant on the farm tablet (optional)
 
-With keys set, the tablet shows a big **🎙 Ask** button. The worker asks in Urdu or English, for example:
+With keys set, the tablet shows a big **🎙 Ask** button. The worker asks in Urdu, Arabic or English, for example:
 - "How long for Block 3?"
 - "Why less than usual?"
 - "Is the tank full?"
@@ -91,10 +91,27 @@ With keys set, the tablet shows a big **🎙 Ask** button. The worker asks in Ur
 The tablet answers out loud. "Block 3 is done" is saved only after the worker says yes or taps ✔.
 
 - **How it works:** ElevenLabs speech-to-text → Gemini picks what to look up (Groq as an optional backup) → the answer is filled in from Milh's own data by code. The model never says a number.
-- **Keys:** needs `GEMINI_API_KEY`, `ELEVENLABS_API_KEY` and `ELEVENLABS_VOICE_IDS` (one voice per language). Without them the button is hidden and everything else works the same.
+- **Language:** the voice screen has **Auto · اردو · العربية · English**. Auto answers in the language the worker spoke; the others always answer in that language.
+- **Keys:** needs `GEMINI_API_KEY`, `ELEVENLABS_API_KEY` and `ELEVENLABS_VOICE_IDS` (one voice per language; Arabic uses the Urdu voice unless you add an `"ar"` one). Without them the button is hidden and everything else works the same.
 - **Internet:** voice needs a connection. Offline, the tablet keeps its plan, announcements and DONE button.
 - **Before the demo:** check that the Scribe model in `ELEVENLABS_STT_MODEL` understands Urdu well, and choose an Urdu voice.
 - **Design:** [docs/2026-11-16-voice-assistant-design.md](docs/2026-11-16-voice-assistant-design.md).
+
+## Open it on a real tablet over Wi-Fi
+
+Browsers only allow the microphone, offline mode and "Add to Home screen" on HTTPS (or on the laptop itself). Tablet mode serves Milh over HTTPS to everyone on your Wi-Fi.
+
+1. Start the API as usual (step 3 of "Run it on a laptop").
+2. Start the web app in tablet mode:
+   ```bash
+   npm --prefix web run tablet
+   ```
+   For the full offline app (a production build), use `npm --prefix web run tablet:offline` instead.
+3. The terminal prints a **Network** address such as `https://192.168.1.20:5173/`. Put the tablet on the same Wi-Fi and open that address in Chrome.
+4. The first time, Chrome warns that the connection is not private (the certificate is made on your laptop, not by a public authority). Tap **Advanced → Proceed**. You won't be asked again until the certificate renews (every 30 days).
+5. Sign in, open the farm tablet view, and allow the microphone when asked. Optional: Chrome menu → **Add to Home screen**.
+
+**If the tablet cannot connect:** Windows may be blocking it. When Windows asks whether Node.js may use the network, allow it. If it never asks, open *Windows Security → Firewall & network protection → Allow an app through firewall* and tick **Node.js** for the network your Wi-Fi uses, or set the Wi-Fi to a **Private** network (*Settings → Network & internet → Wi-Fi → your network → Private*). Some guest or school Wi-Fi networks block devices from reaching each other; a phone hotspot works as a fallback.
 
 ## Getting data in
 
