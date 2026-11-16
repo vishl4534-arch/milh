@@ -1,5 +1,10 @@
 # Milh voice assistant for the farm tablet — design
 
+> **Approved scope (16 Nov 2026, trimmed):** spoken questions (today's plan, why, water, soil, weather/sun,
+> what's next, help) and **"Block N is done" with a yes check**. **Not in this build:** `log_reading` (voice-entered
+> meter values): a misheard number saved as data is the riskiest part. Everything below about `log_reading` is
+> deferred.
+
 **16 Nov 2026 · Builds on the platform design (`docs/2026-11-16-milh-platform-design.md`) and reuses the assistant from the team's sea-safe project.**
 
 ## 1. What and why
