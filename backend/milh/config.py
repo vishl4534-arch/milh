@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+import secrets
 from functools import lru_cache
 from pathlib import Path
 
@@ -13,7 +15,7 @@ class Settings(BaseSettings):
 
     # SQLite by default so the platform runs on a laptop without Docker; Postgres in compose/CI.
     database_url: str = "sqlite:///./milh.db"
-    jwt_secret: str = "change-me-in-env"
+    jwt_secret: str = ""  # empty -> a random per-process secret (dev only); set in .env
     elevenlabs_api_key: str | None = None
     elevenlabs_model_id: str = "eleven_multilingual_v2"
     elevenlabs_voice_ids: dict[str, str] = {}
@@ -26,4 +28,11 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()
+    s = Settings()
+    if len(s.jwt_secret) < 32:
+        logging.getLogger(__name__).warning(
+            "JWT_SECRET missing or shorter than 32 chars; using a random secret for this process. "
+            "Logins will not survive a restart. Set JWT_SECRET in .env."
+        )
+        s.jwt_secret = secrets.token_urlsafe(48)
+    return s
