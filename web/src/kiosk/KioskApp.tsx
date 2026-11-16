@@ -16,6 +16,7 @@ import { VoiceMode } from './voice/VoiceMode'
 import { MilhLogo, MilhMark } from '../brand/Logo'
 import { dayMonth, hhmm } from '../lib/format'
 import { greetingKey } from './greeting'
+import { LoopVideo } from '../earth/LoopVideo'
 
 export function KioskApp({ farmId }: { farmId?: string }) {
   const { t, i18n } = useTranslation()
@@ -117,7 +118,7 @@ export function KioskApp({ farmId }: { farmId?: string }) {
     return (
       <button type="button" onClick={() => { player.unlock(); setUnlocked(true) }}
         className="earth relative block w-full overflow-hidden bg-[#0b0e07] text-start">
-        <img src="/scenes/farm-hero.webp" alt="" className="kenburns absolute inset-0 h-full w-full object-cover" />
+        <LoopVideo src="/scenes/farm-hero.mp4" poster="/scenes/farm-hero.webp" className="kenburns absolute inset-0" />
         <span aria-hidden className="absolute inset-0 bg-[linear-gradient(90deg,rgba(11,14,7,.85)_0%,rgba(11,14,7,.55)_45%,rgba(11,14,7,.05)_80%)] rtl:bg-[linear-gradient(270deg,rgba(11,14,7,.85)_0%,rgba(11,14,7,.55)_45%,rgba(11,14,7,.05)_80%)]" />
         <span className="relative flex min-h-dvh flex-col justify-between gap-8 p-6 md:p-12">
           <MilhLogo color="#f7f8f4" className="card-in h-11 w-auto self-start" />
