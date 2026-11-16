@@ -7,8 +7,11 @@ values is discarded and the template sentence is kept.
 from __future__ import annotations
 
 import logging
+from datetime import date
 from functools import lru_cache
 from typing import Any
+
+from pydantic import BaseModel
 
 from milh.config import get_settings
 
@@ -16,6 +19,26 @@ log = logging.getLogger(__name__)
 
 LANG_NAMES = {"en": "English", "ur": "Urdu", "ar": "Arabic", "hi": "Hindi"}
 MAX_REPHRASE_CHARS = 300
+
+
+class LabSample(BaseModel):
+    label: str
+    ece: float | None = None
+    ec_1to5: float | None = None
+    ph: float | None = None
+    moisture_vwc: float | None = None
+
+
+class LabWater(BaseModel):
+    label: str
+    ec: float | None = None
+
+
+class LabReportExtract(BaseModel):
+    tested_on: date | None = None
+    lab: str | None = None
+    samples: list[LabSample] = []
+    water: list[LabWater] = []
 
 
 class GeminiService:
@@ -56,6 +79,33 @@ class GeminiService:
             log.info("Gemini rewording dropped a number; keeping template text")
             return None
         return out
+
+    def extract_lab_report(self, data: bytes, mime_type: str) -> LabReportExtract | None:
+        """Read soil/water values off a lab report photo or PDF. A person confirms them before saving."""
+        if self.client is None:
+            return None
+        try:
+            from google.genai import types
+
+            resp = self.client.models.generate_content(
+                model=self.model,
+                contents=[
+                    types.Part.from_bytes(data=data, mime_type=mime_type),
+                    "Extract the soil and irrigation-water test results from this laboratory report. "
+                    "Use null for anything not printed on the report; never guess. ECe and EC are in dS/m "
+                    "(convert from mS/cm 1:1 or µS/cm /1000 only if the report states the unit).",
+                ],
+                config=types.GenerateContentConfig(response_mime_type="application/json",
+                                                   response_schema=LabReportExtract),
+            )
+            parsed = getattr(resp, "parsed", None)
+            if isinstance(parsed, LabReportExtract):
+                return parsed
+            text = getattr(resp, "text", None)
+            return LabReportExtract.model_validate_json(text) if text else None
+        except Exception as e:
+            log.warning("Gemini lab-report extraction failed: %s", e)
+            return None
 
     def translate(self, text: str, target_lang: str) -> str | None:
         prompt = (

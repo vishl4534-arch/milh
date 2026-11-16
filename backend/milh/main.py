@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from milh.api import alerts, announcements, auth, farms, imports, kiosk, plans, readings, reports, weather
+from milh.api import alerts, announcements, auth, farms, imports, kiosk, lab, plans, readings, reports, weather
 from milh.config import get_settings
 
 
@@ -25,7 +25,7 @@ def create_app() -> FastAPI:
     def health() -> dict[str, str]:
         return {"status": "ok"}
 
-    for module in (auth, farms, imports, readings, weather, plans, announcements, kiosk, reports, alerts):
+    for module in (auth, farms, imports, readings, weather, plans, announcements, kiosk, reports, alerts, lab):
         app.include_router(module.router)
 
     settings.media_dir.mkdir(parents=True, exist_ok=True)

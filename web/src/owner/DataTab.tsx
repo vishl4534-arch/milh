@@ -4,6 +4,7 @@ import { api } from '../api/client'
 import { useBlocks, useReadings, useSoilTests, useSources, useTanks } from '../api/hooks'
 import type { Farm, IngestResult } from '../api/types'
 import { ImportCsv } from './ImportCsv'
+import { LabReport } from './LabReport'
 
 const input = 'mt-1 w-full rounded-xl border border-line bg-salt px-3 py-2'
 const METRICS = {
@@ -27,10 +28,17 @@ export function DataTab({ farm }: { farm: Farm }) {
       <ReadingForm farm={farm} />
       <SoilTestForm farm={farm} />
       <div className="lg:col-span-2"><ImportCsv farmId={farm.id} /></div>
+      <LabReportSection farm={farm} />
       <div className="lg:col-span-2"><RecentReadings farm={farm} /></div>
       <AnnouncementForm farm={farm} />
     </div>
   )
+}
+
+function LabReportSection({ farm }: { farm: Farm }) {
+  const qc = useQueryClient()
+  const blocks = useBlocks(farm.id)
+  return <LabReport farmId={farm.id} blocks={blocks.data ?? []} onSaved={() => void qc.invalidateQueries()} />
 }
 
 function ReadingForm({ farm }: { farm: Farm }) {

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from pydantic import BaseModel
@@ -96,11 +96,14 @@ def list_readings(
 
 @router.post("/farms/{farm_id}/soil-tests", response_model=SoilTestOut, status_code=201)
 def post_soil_test(
-    farm_id: uuid.UUID, body: SoilTestIn, p: Annotated[Principal, Depends(current_principal)], session: DB
+    farm_id: uuid.UUID, body: SoilTestIn, p: Annotated[Principal, Depends(current_principal)], session: DB,
+    via: Literal["form", "lab_report"] = "form",
 ) -> SoilTest:
+    """`via=lab_report` records values the owner confirmed from a Gemini-read lab report."""
     farm = farm_for(session, p, farm_id)
+    source, confirmed = ("gemini_extract", p.user.id) if via == "lab_report" else ("manual", None)
     try:
-        test, _created = record_soil_test(session, farm, body, "manual", p.user.id)
+        test, _created = record_soil_test(session, farm, body, source, p.user.id, confirmed_by=confirmed)
     except IngestError as e:
         raise HTTPException(422, {"code": e.code, "message": e.message}) from e
     session.commit()
