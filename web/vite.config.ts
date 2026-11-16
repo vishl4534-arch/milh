@@ -21,7 +21,7 @@ export default defineConfig({
         icons: [{ src: '/milh.svg', sizes: 'any', type: 'image/svg+xml' }],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,mp3,json,csv}'],
+        globPatterns: ['**/*.{js,css,html,svg,mp3,wav,json,csv}'],
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api/, /^\/media/],
         runtimeCaching: [

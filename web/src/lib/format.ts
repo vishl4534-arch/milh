@@ -24,6 +24,11 @@ export function dayMonth(iso: string | number, tz: string): string {
   return fmt(tz, { day: 'numeric', month: 'short' }).format(d)
 }
 
+/** "2026-11-16" for an instant, in the farm's timezone. */
+export function localDay(iso: string | number, tz: string): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(iso))
+}
+
 export function ageText(hours: number | null | undefined, t: TFunction): string {
   if (hours === null || hours === undefined) return ''
   if (hours < 1 / 60) return t('time.justNow')

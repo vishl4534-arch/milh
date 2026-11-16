@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -20,13 +20,27 @@ from milh.auth import (
     require_role,
     verify_secret,
 )
-from milh.db import get_session
+from milh.db import get_session, utcnow
 from milh.models import Device, FarmMember, User
 
 router = APIRouter(prefix="/api/v1", tags=["auth"])
 
 OWNER_TTL = timedelta(hours=12)
 KIOSK_TTL = timedelta(hours=18)
+PIN_MAX_FAILURES = 5
+PIN_LOCKOUT = timedelta(minutes=5)
+_pin_failures: dict[uuid.UUID, tuple[int, datetime | None]] = {}  # per device: (failures, locked until)
+
+
+def _pin_locked(device_id: uuid.UUID) -> bool:
+    _n, until = _pin_failures.get(device_id, (0, None))
+    return until is not None and utcnow() < until
+
+
+def _pin_failed(device_id: uuid.UUID) -> None:
+    n, _until = _pin_failures.get(device_id, (0, None))
+    n += 1
+    _pin_failures[device_id] = (0, utcnow() + PIN_LOCKOUT) if n >= PIN_MAX_FAILURES else (n, None)
 
 
 class LoginIn(BaseModel):
@@ -77,6 +91,8 @@ def kiosk_login(body: KioskLoginIn, session: Annotated[Session, Depends(get_sess
     dev = device_from_key(session, body.device_key)
     if dev is None or dev.kind != "kiosk":
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Unknown kiosk")
+    if _pin_locked(dev.id):
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, "Too many wrong PINs. Wait 5 minutes.")
     workers = session.scalars(
         select(User).join(FarmMember, FarmMember.user_id == User.id)
         .where(FarmMember.farm_id == dev.farm_id, User.role == "worker")
@@ -84,8 +100,10 @@ def kiosk_login(body: KioskLoginIn, session: Annotated[Session, Depends(get_sess
     for w in workers:
         if verify_secret(body.pin, w.pin_hash):
             session.commit()
+            _pin_failures.pop(dev.id, None)
             return TokenOut(access_token=issue_token(w, dev.farm_id, KIOSK_TTL))
     session.commit()
+    _pin_failed(dev.id)
     raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Wrong PIN")
 
 

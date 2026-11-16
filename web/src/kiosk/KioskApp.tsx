@@ -1,7 +1,8 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { api } from '../api/client'
+import { useNavigate } from 'react-router-dom'
+import { api, ApiError, setToken } from '../api/client'
 import { useKioskBundle } from '../api/hooks'
 import type { KAnnouncement, KRun, Lang } from '../api/types'
 import { Speaker } from '../components/icons'
@@ -14,6 +15,7 @@ import { ReadingEntry } from './ReadingEntry'
 export function KioskApp({ farmId }: { farmId?: string }) {
   const { t, i18n } = useTranslation()
   const qc = useQueryClient()
+  const navigate = useNavigate()
   const { data, error, isLoading, refetch } = useKioskBundle(farmId)
   const player = useMemo(() => browserPlayer(), [])
   const [unlocked, setUnlocked] = useState(false)
@@ -71,6 +73,13 @@ export function KioskApp({ farmId }: { farmId?: string }) {
   function listen(a: KAnnouncement | null) {
     if (a) void player.playNow(a)
   }
+
+  useEffect(() => {
+    if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
+      setToken(null)
+      navigate(farmId ? '/login' : '/kiosk/login', { replace: true })
+    }
+  }, [error, farmId, navigate])
 
   if (isLoading) return <div className="grid min-h-dvh place-items-center text-2xl">{t('common.loading')}</div>
   if (error || !data) {

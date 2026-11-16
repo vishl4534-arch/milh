@@ -44,6 +44,7 @@ def test_full_loop(client, session) -> None:
             "ece": 2.1, "ph": 7.9}
     assert client.post(f"/api/v1/farms/{farm.id}/soil-tests", json=soil, headers=h).status_code == 201
 
+    recomputed_at = datetime.now(UTC) - timedelta(seconds=5)
     plans = client.post(f"/api/v1/farms/{farm.id}/plans/recompute", headers=h).json()
     assert len(plans) == 3
     for p in plans:
@@ -51,8 +52,8 @@ def test_full_loop(client, session) -> None:
         assert "no_water_ec" not in p["fallbacks"]
 
     kiosk = client.get(f"/api/v1/kiosk/bundle?farm_id={farm.id}", headers=bearer(worker, farm.id)).json()
-    types = {a["type"] for a in kiosk["announcements"]}
-    assert "daily_briefing" in types
+    # A plan recomputed during the day only schedules what is still ahead: nothing is replayed.
+    assert all(datetime.fromisoformat(a["scheduled_at"]) >= recomputed_at for a in kiosk["announcements"])
     assert kiosk["blocks"][1]["next_test_due"] is not None
 
     run = next(r for r in kiosk["runs"] if r["steps"])

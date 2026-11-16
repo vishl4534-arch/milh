@@ -61,6 +61,19 @@ def raise_alert(
     return alert
 
 
+def resolve_alerts(session: Session, farm_id: uuid.UUID, type: str, subject: str | None,
+                   now: datetime | None = None) -> int:
+    """Close open alerts whose condition has cleared, so the next occurrence alerts (and is announced) again."""
+    n = 0
+    for a in session.scalars(select(Alert).where(Alert.farm_id == farm_id, Alert.type == type,
+                                                 Alert.subject == subject, Alert.resolved_at.is_(None))):
+        a.resolved_at = now or utcnow()
+        n += 1
+    if n:
+        session.flush()
+    return n
+
+
 def check_staleness(session: Session, farm: Farm, now: datetime) -> list[Alert]:
     from zoneinfo import ZoneInfo
 

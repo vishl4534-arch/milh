@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from milh.announcements.build import BUILD_TYPES, AnnouncementDraft, RunForAnnounce, build_day
 from milh.announcements.templates import format_time, localized, render
 from milh.farm_config import get_farm_settings
-from milh.models import Announcement, Block, Crop, Farm, IrrigationPlan, WaterSource
+from milh.models import Announcement, Block, Crop, Farm, IrrigationEvent, IrrigationPlan, WaterSource
 from milh.planning.soil_due import soil_due_for_block
 from milh.sources.open_meteo import latest_day_weather
 
@@ -54,15 +54,18 @@ def _day_bounds(day: date, tz: ZoneInfo) -> tuple[datetime, datetime]:
 
 
 def rebuild_day(session: Session, farm_id: uuid.UUID, day: date, now: datetime) -> list[Announcement]:
-    """Cancel the day's still-scheduled generated announcements and create fresh ones from the plans.
-    Played/acknowledged history, custom messages and alert announcements are left alone."""
+    """Replace the day's upcoming generated announcements with fresh ones from the plans.
+
+    Only the future is rebuilt: anything due before `now` stays as it is (so nothing is replayed),
+    runs already confirmed done get no new tap instructions, and played history, custom messages and
+    alert announcements are never touched."""
     farm = session.get(Farm, farm_id)
     assert farm is not None
     s = get_farm_settings(farm)
     tz = ZoneInfo(farm.timezone)
     lo, hi = _day_bounds(day, tz)
     for old in session.scalars(select(Announcement).where(
-        Announcement.farm_id == farm_id, Announcement.scheduled_at >= lo, Announcement.scheduled_at < hi,
+        Announcement.farm_id == farm_id, Announcement.scheduled_at >= max(lo, now), Announcement.scheduled_at < hi,
         Announcement.status == "scheduled", Announcement.custom.is_(False), Announcement.type.in_(BUILD_TYPES),
     )):
         old.status = "cancelled"
@@ -91,7 +94,13 @@ def rebuild_day(session: Session, farm_id: uuid.UUID, day: date, now: datetime) 
     sunrise = wx[0].sunrise if wx else None
     sunset = wx[0].sunset if wx else None
     tmax = wx[0].tmax_c if wx else None
-    created = [_store(session, farm, d) for d in build_day(day, tz, runs, sunrise, sunset, tmax, soil_due, s)]
+    done_plans = set(session.scalars(select(IrrigationEvent.plan_id).where(
+        IrrigationEvent.plan_id.in_([p.id for p in plans.values()]))))
+    drafts = [
+        d for d in build_day(day, tz, runs, sunrise, sunset, tmax, soil_due, s)
+        if d.scheduled_at >= now and not (d.plan_id in done_plans and d.type.startswith("irrigation_"))
+    ]
+    created = [_store(session, farm, d) for d in drafts]
     session.flush()
     return created
 

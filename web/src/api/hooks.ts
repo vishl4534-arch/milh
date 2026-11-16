@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { api } from './client'
+import { api, ApiError } from './client'
 import type {
   Alert,
   Block,
@@ -63,6 +63,8 @@ export async function fetchBundle(farmId?: string): Promise<BundleState> {
     await cacheBundle(bundle).catch(() => undefined)
     return { bundle, offline: false, cachedAt: null }
   } catch (err) {
+    // A rejected sign-in must send the worker to the PIN screen, not hide behind an old copy.
+    if (err instanceof ApiError && (err.status === 401 || err.status === 403)) throw err
     const cached = await loadCachedBundle()
     if (cached) return { bundle: cached.bundle, offline: true, cachedAt: cached.savedAt }
     throw err

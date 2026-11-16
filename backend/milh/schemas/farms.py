@@ -125,7 +125,7 @@ class BlockIn(BaseModel):
     irrigation_type: str = "drip"
     flow_l_per_h: float = Field(gt=0)
     efficiency: float = Field(0.9, gt=0, le=1)
-    habit_minutes: int = Field(ge=0, le=1440)
+    habit_minutes: int = Field(ge=1, le=1440)
     habit_source_id: uuid.UUID
     soil_texture: str | None = None
     position: int = 0
@@ -138,7 +138,7 @@ class BlockPatch(BaseModel):
     planting_date: date | None = None
     flow_l_per_h: float | None = Field(default=None, gt=0)
     efficiency: float | None = Field(default=None, gt=0, le=1)
-    habit_minutes: int | None = Field(default=None, ge=0, le=1440)
+    habit_minutes: int | None = Field(default=None, ge=1, le=1440)
     habit_source_id: uuid.UUID | None = None
     soil_texture: str | None = None
     position: int | None = None

@@ -75,3 +75,12 @@ test('offline badge shows cached time', () => {
   view(bundleFixture(), true)
   expect(screen.getByText(/Offline · data from 04:00/)).toBeInTheDocument()
 })
+
+test('a cached plan from another day is marked as not today', () => {
+  const b = bundleFixture({ day: '2026-11-15' })
+  render(
+    <KioskView state={{ bundle: b, offline: true, cachedAt: '2026-11-15T20:00:00+04:00' }} lang="en" now={NOW}
+      onDone={vi.fn()} onListen={vi.fn()} onLang={vi.fn()} onAddReading={vi.fn()} />,
+  )
+  expect(screen.getByText(/Not today's plan/)).toBeInTheDocument()
+})

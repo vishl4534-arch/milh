@@ -151,6 +151,8 @@ def plan_farm_day(session: Session, farm_id: uuid.UUID, day: date, now: datetime
         if bp.cap_exceeded:
             alerts.raise_alert(session, farm_id, "water_too_salty", "critical",
                                {"block": b.name, "crop": localized(crop_row.names, "en")}, subject=str(b.id))
+        elif not bp.fallbacks or bp.ecw is not None:
+            alerts.resolve_alerts(session, farm_id, "water_too_salty", str(b.id), now)
         stored.append(row)
     farm.needs_replan = False
     session.flush()

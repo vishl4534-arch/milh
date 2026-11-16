@@ -30,6 +30,7 @@ export function createPlayer(deps: PlayerDeps): Player {
   let lang = 'en'
   let pending: KAnnouncement[] = []
   const timers = new Map<string, Timer>()
+  const blocked = new Map<string, KAnnouncement>() // rejected by autoplay rules: replay on the next tap
   const blockedCbs: (() => void)[] = []
   const playedCbs: ((a: KAnnouncement) => void)[] = []
 
@@ -38,7 +39,10 @@ export function createPlayer(deps: PlayerDeps): Player {
       await deps.play(a, lang)
       playedCbs.forEach((cb) => cb(a))
     } catch (err) {
-      if (err instanceof DOMException && err.name === 'NotAllowedError') blockedCbs.forEach((cb) => cb())
+      if (err instanceof DOMException && err.name === 'NotAllowedError') {
+        blocked.set(a.id, a)
+        blockedCbs.forEach((cb) => cb())
+      }
     }
   }
 
@@ -56,12 +60,23 @@ export function createPlayer(deps: PlayerDeps): Player {
   return {
     unlock() {
       unlocked = true
+      const retry = [...blocked.values()]
+      blocked.clear()
+      retry.forEach((a) => void run(a))
       schedule()
     },
     isUnlocked: () => unlocked,
     load(list, l) {
       lang = l
       pending = list
+      // Announcements dropped from the plan (re-planned or cancelled) must not fire from old timers.
+      const keep = new Set(list.map((a) => a.id))
+      for (const [id, t] of timers) {
+        if (!keep.has(id)) {
+          deps.clearTimer(t)
+          timers.delete(id)
+        }
+      }
       schedule()
     },
     playNow: (a) => run(a),
@@ -96,7 +111,12 @@ function speak(text: string, lang: string): Promise<void> {
 
 /** Chime, then the cached ElevenLabs clip. With no clip, the browser's own voice reads the text. */
 export async function playAnnouncement(a: KAnnouncement, lang: string): Promise<void> {
-  await playUrl('/chime.wav')
+  try {
+    await playUrl('/chime.wav')
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'NotAllowedError') throw err
+    // A missing chime must never silence the instruction itself.
+  }
   const url = pick(a.audio, lang)
   if (url) {
     try {

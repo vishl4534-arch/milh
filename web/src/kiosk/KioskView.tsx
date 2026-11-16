@@ -3,7 +3,7 @@ import type { BundleState } from '../api/hooks'
 import type { KAnnouncement, KBlock, KRun, KSource, KTank, Lang } from '../api/types'
 import { Check, Cross, Drop, Leaf, Plus, Rain, Speaker, Sunrise, Sunset, Thermo, Warn, Wifi } from '../components/icons'
 import { pick } from '../i18n'
-import { ageText, dayMonth, hhmm, hoursSince, litres } from '../lib/format'
+import { ageText, dayMonth, hhmm, hoursSince, litres, localDay } from '../lib/format'
 import { PipeBar } from './PipeBar'
 
 const LANG_LABEL: Record<string, string> = { en: 'EN', ur: 'اردو', ar: 'عربي', hi: 'हिंदी' }
@@ -37,6 +37,11 @@ export function KioskView(props: KioskViewProps) {
   return (
     <div className="flex min-h-dvh flex-col gap-3 bg-salt p-3 text-ink md:p-4">
       <Header {...props} />
+      {b.day !== localDay(now, tz) && (
+        <div role="alert" className="rounded-2xl bg-brine px-5 py-3 text-lg font-semibold text-white">
+          {t('kiosk.notToday', { day: dayMonth(b.day, tz) })}
+        </div>
+      )}
       {props.soundBlocked && (
         <button type="button" onClick={props.onUnblockSound}
           className="flex items-center gap-3 rounded-2xl bg-dune px-5 py-3 text-start text-lg font-semibold text-white">

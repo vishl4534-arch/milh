@@ -90,11 +90,18 @@ def _side_effects(session: Session, farm: Farm, reading: Reading) -> None:
             alerts.raise_alert(session, farm.id, "water_ec_jump", "warning",
                                {"source": src.name if src else "", "old": round(prev.value, 2),
                                 "new": round(reading.value, 2)}, subject=str(reading.source_id))
-    if reading.metric == "tank_level_pct" and reading.tank_id is not None and reading.value < s.tank_low_pct:
-        tank = session.get(Tank, reading.tank_id)
-        alerts.raise_alert(session, farm.id, "tank_low", "warning",
-                           {"tank": tank.name if tank else "", "pct": round(reading.value)},
-                           subject=str(reading.tank_id))
+    if reading.tank_id is not None:
+        alerts.resolve_alerts(session, farm.id, "data_stale", f"tank:{reading.tank_id}")
+    if reading.submitted_by_device_id is not None:
+        alerts.resolve_alerts(session, farm.id, "device_offline", f"device:{reading.submitted_by_device_id}")
+    if reading.metric == "tank_level_pct" and reading.tank_id is not None:
+        if reading.value < s.tank_low_pct:
+            tank = session.get(Tank, reading.tank_id)
+            alerts.raise_alert(session, farm.id, "tank_low", "warning",
+                               {"tank": tank.name if tank else "", "pct": round(reading.value)},
+                               subject=str(reading.tank_id))
+        else:
+            alerts.resolve_alerts(session, farm.id, "tank_low", str(reading.tank_id))
 
 
 def ingest(

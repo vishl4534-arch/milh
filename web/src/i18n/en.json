@@ -18,6 +18,7 @@
     "done": "Done",
     "doneSaved": "Marked as done",
     "unconfirmed": "Not confirmed yet",
+    "notToday": "Not today's plan ({{day}}). Connect to the internet to update.",
     "skipRain": "No watering: rain",
     "skipNoNeed": "No watering needed",
     "flush": "Long watering to wash out salt",

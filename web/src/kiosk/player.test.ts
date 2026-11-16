@@ -1,5 +1,5 @@
 import { expect, test, vi } from 'vitest'
-import { createPlayer } from './player'
+import { createPlayer, type PlayerDeps } from './player'
 import type { KAnnouncement } from '../api/types'
 
 const T0 = Date.parse('2026-11-16T05:00:00+04:00')
@@ -8,7 +8,7 @@ const ann = (id: string, at: string, status = 'scheduled'): KAnnouncement => ({
   plan_id: null,
 })
 
-function harness(play = vi.fn(async () => undefined)) {
+function harness(play: PlayerDeps['play'] = vi.fn(async () => undefined)) {
   const timers: { fn: () => void; ms: number }[] = []
   const player = createPlayer({
     now: () => T0,
@@ -58,4 +58,33 @@ test('slightly late items still play right away', () => {
   player.unlock()
   player.load([ann('late', '2026-11-16T04:55:00+04:00')], 'en')
   expect(timers.map((t) => t.ms)).toEqual([0])
+})
+
+test('reloading drops timers for announcements no longer in the plan', () => {
+  const cleared: unknown[] = []
+  const timers: { fn: () => void; ms: number }[] = []
+  const player = createPlayer({
+    now: () => T0,
+    setTimer: (fn, ms) => { timers.push({ fn, ms }); return `t${timers.length}` },
+    clearTimer: (t) => { cleared.push(t) },
+    play: vi.fn(async () => undefined),
+  })
+  player.unlock()
+  player.load([ann('old', '2026-11-16T05:03:00+04:00')], 'en')
+  player.load([ann('new', '2026-11-16T05:04:00+04:00')], 'en')
+  expect(cleared).toEqual(['t1'])
+  expect(timers).toHaveLength(2)
+})
+
+test('an announcement blocked by the browser plays once sound is enabled', async () => {
+  let allow = false
+  const play = vi.fn(async () => { if (!allow) throw new DOMException('no gesture', 'NotAllowedError') })
+  const { player, timers } = harness(play)
+  player.unlock()
+  player.load([ann('a', '2026-11-16T05:03:00+04:00')], 'en')
+  timers[0].fn()
+  await vi.waitFor(() => expect(play).toHaveBeenCalledTimes(1))
+  allow = true
+  player.unlock()
+  await vi.waitFor(() => expect(play).toHaveBeenCalledTimes(2))
 })
