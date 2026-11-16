@@ -7,7 +7,6 @@ import type { KioskBundle } from '../api/types'
 import { Rain, Sunrise, Sunset, Thermo } from '../components/icons'
 import { ageText, dayMonth, hhmm } from '../lib/format'
 import { SkyScene } from '../kiosk/scene/SkyScene'
-import { LoopVideo } from './LoopVideo'
 
 const FORECAST_STALE_H = 6
 
@@ -168,7 +167,7 @@ export function FarmView({ top, children, ariaLabel, className = '', delay = 0 }
   return (
     <section aria-label={ariaLabel} className={`card-in relative isolate overflow-hidden rounded-[1.75rem] ring-1 ring-white/10 ${className}`}
       style={{ animationDelay: `${delay}ms` }}>
-      <LoopVideo src="/scenes/farm-aerial.mp4" poster="/scenes/farm-aerial.webp" className="kenburns absolute inset-0 -z-10" />
+      <img src="/scenes/farm-aerial.webp" alt="" className="kenburns absolute inset-0 -z-10 h-full w-full object-cover" />
       <div aria-hidden className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(11,14,7,.72)_0%,rgba(11,14,7,.35)_55%,rgba(11,14,7,.1)_100%)] rtl:bg-[linear-gradient(270deg,rgba(11,14,7,.72)_0%,rgba(11,14,7,.35)_55%,rgba(11,14,7,.1)_100%)]" />
       {top && <div className="flex justify-center p-3">{top}</div>}
       <div className={`p-3 md:p-4 ${top ? 'pt-0 md:pt-0' : ''}`}>{children}</div>

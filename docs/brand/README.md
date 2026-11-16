@@ -28,5 +28,3 @@ The worker tablet and the owner screens use dark glass cards over the farm (insp
 - `farm-aerial.webp`: an aerial picture of a date farm like the example farm, used behind the block card. It is a picture, not a map: it is labelled "Picture of a farm like yours" and no block is placed on it.
 - `farm-hero.webp`: sunrise over a date palm, behind the tablet's start screen.
 - `farm-bg.webp`: the aerial picture, shrunk and pre-blurred, behind every farm screen (a few KB, so tablets do not blur live).
-- `farm-hero.mp4`, `farm-aerial.mp4`: 5-second silent loops made from those two pictures with Higgsfield (Seedance 2.5, 480p, 15 credits each), re-encoded for the web (174 KB and 231 KB). They play behind the start screen and the farm card. The still picture shows until a loop plays, and stays in place for reduced motion, data saver, or no connection.
-  To swap in an upscaled version, keep the same file names: H.264 MP4, no audio, `-movflags +faststart` (`ffmpeg -i in.mp4 -an -c:v libx264 -crf 25 -pix_fmt yuv420p -movflags +faststart farm-hero.mp4`).
