@@ -2,12 +2,34 @@ import pytest
 
 from milh.agronomy.water import (
     crop_et_mm,
+    ece_from_lf,
     effective_rain_mm,
     gross_volume_l,
+    leaching_fraction,
     leaching_requirement,
     net_irrigation_mm,
     runtime_minutes,
 )
+
+
+def test_ece_from_lf_inverts_lr() -> None:
+    # Leaching exactly the LR keeps the root zone at the crop threshold.
+    lr = leaching_requirement(3.6, 2.5)
+    assert lr is not None
+    assert ece_from_lf(3.6, lr) == pytest.approx(2.5)
+
+
+def test_ece_from_lf_matches_rule_of_thumb() -> None:
+    assert ece_from_lf(4.0, 0.15) == pytest.approx(1.533 * 4.0, abs=0.01)
+
+
+def test_leaching_fraction_from_applied_water() -> None:
+    # 15 000 L on 1000 m2 at 90 % = 13.5 mm; crop uses 6.75 mm -> half drains.
+    assert leaching_fraction(15000, 6.75, 1000, 0.9) == pytest.approx(0.5)
+
+
+def test_leaching_fraction_floor_when_under_watering() -> None:
+    assert leaching_fraction(1000, 7.0, 1000, 0.9) == pytest.approx(0.05)
 
 
 def test_crop_et() -> None:

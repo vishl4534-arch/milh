@@ -4,7 +4,7 @@ type P = SVGProps<SVGSVGElement> & { label?: string }
 
 function Svg({ label, children, ...rest }: P) {
   return (
-    <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" strokeWidth={2}
+    <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" strokeWidth={1.75}
       strokeLinecap="round" strokeLinejoin="round" role={label ? 'img' : undefined} aria-label={label}
       aria-hidden={label ? undefined : true} {...rest}>
       {children}

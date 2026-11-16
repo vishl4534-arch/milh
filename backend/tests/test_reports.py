@@ -61,5 +61,5 @@ def test_csv_header_and_rows(client, session) -> None:
     r = client.get(f"/api/v1/farms/{farm.id}/reports/water.csv?start={D1}&end={D1 + timedelta(days=0)}",
                    headers=bearer(owner))
     lines = r.text.strip().splitlines()
-    assert lines[0] == "day,planned_l,actual_l,habit_l,saved_l,saved_aed,adherence_pct"
+    assert lines[0] == "day,planned_l,actual_l,habit_l,saved_l,saved_aed,adherence_pct,aquifer_saved_l"
     assert lines[1].startswith("2026-11-15,10000")

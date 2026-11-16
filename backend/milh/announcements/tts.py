@@ -23,6 +23,11 @@ from milh.models import Announcement
 
 log = logging.getLogger(__name__)
 ELEVENLABS_URL = "https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
+# A warm, expressive read rather than a flat one: lower stability lets pitch rise and fall with the
+# punctuation of the templates; a little style adds natural emphasis without sounding acted.
+VOICE_SETTINGS = {"stability": 0.38, "similarity_boost": 0.8, "style": 0.3, "use_speaker_boost": True, "speed": 0.95}
+# Bump when VOICE_SETTINGS change, so cached clips are regenerated with the new delivery.
+VOICE_STYLE_VERSION = "v2"
 
 
 class TtsClient(Protocol):
@@ -39,7 +44,7 @@ class ElevenLabsTts:
         self.http = http
 
     def voice_key(self, lang: str) -> str:
-        return f"{self.model_id}:{self.voice_ids[lang]}"
+        return f"{self.model_id}:{self.voice_ids[lang]}:{VOICE_STYLE_VERSION}"
 
     def synthesize(self, text: str, lang: str) -> bytes:
         voice = self.voice_ids[lang]
@@ -48,7 +53,7 @@ class ElevenLabsTts:
         r = self.http.post(
             ELEVENLABS_URL.format(voice_id=voice),
             headers={"xi-api-key": self.api_key, "Accept": "audio/mpeg"},
-            json={"text": text, "model_id": self.model_id},
+            json={"text": text, "model_id": self.model_id, "voice_settings": VOICE_SETTINGS},
             timeout=60,
         )
         r.raise_for_status()

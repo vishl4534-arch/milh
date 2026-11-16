@@ -40,9 +40,10 @@ def get_water_csv(farm_id: uuid.UUID, start: date, end: date, p: Member, session
     rep = water_report(session, farm_id, start, end)
     buf = io.StringIO()
     w = csv.writer(buf, lineterminator="\n")
-    w.writerow(["day", "planned_l", "actual_l", "habit_l", "saved_l", "saved_aed", "adherence_pct"])
+    w.writerow(["day", "planned_l", "actual_l", "habit_l", "saved_l", "saved_aed", "adherence_pct",
+                "aquifer_saved_l"])
     for r in rep.days:
         w.writerow([r.day.isoformat(), r.planned_l, "" if r.actual_l is None else r.actual_l, r.habit_l, r.saved_l,
-                    r.saved_aed, "" if r.adherence_pct is None else r.adherence_pct])
+                    r.saved_aed, "" if r.adherence_pct is None else r.adherence_pct, r.aquifer_saved_l])
     return PlainTextResponse(buf.getvalue(), media_type="text/csv",
                              headers={"Content-Disposition": f'attachment; filename="water_{start}_{end}.csv"'})

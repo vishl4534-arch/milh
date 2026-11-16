@@ -17,7 +17,8 @@ def test_speech_reads_the_plan_text(client, farm_worker) -> None:  # type: ignor
     r = client.get(f"/api/v1/kiosk/runs/{pid}/speech?lang=en", headers=bearer(worker, farm.id))
     assert r.status_code == 200
     body = r.json()
-    assert body["text"]  # the plan's own instruction
+    assert "open the" in body["text"] and "minutes" in body["text"]  # what to do, not the agronomy
+    assert "dS/m" not in body["text"] and "Kc" not in body["text"]
     assert body["audio_url"] is None  # no voice keys in tests: the tablet reads it with its own voice
 
 

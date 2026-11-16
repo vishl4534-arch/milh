@@ -75,6 +75,7 @@ def plan_farm_day(session: Session, farm_id: uuid.UUID, day: date, now: datetime
     states = source_states(session, farm_id, now)
     costs = {str(sid): ws.cost_per_m3 for sid, ws in sources.items()}
     tap_order = [str(ws.id) for ws in sorted(sources.values(), key=lambda w: (w.position, w.name))]
+    groundwater = frozenset(str(sid) for sid, ws in sources.items() if ws.kind == "well")
 
     wx_row = latest_day_weather(session, farm_id, day, now)
     wx = DayWeather(wx_row[0].et0_mm, wx_row[0].rain_mm, wx_row[1]) if wx_row else None
@@ -88,16 +89,20 @@ def plan_farm_day(session: Session, farm_id: uuid.UUID, day: date, now: datetime
         assert crop_row is not None
         soil = latest_soil_test(session, b.id, day)
         crop = crop_from_row(crop_row)
-        flush_due = soil is not None and soil.ece > crop.salt_a and not _flush_recent(session, b.id, day)
+        soil_stale = soil is not None and (day - soil.tested_on).days > s.stale_soil_days
+        flush_due = (soil is not None and not soil_stale and soil.ece > crop.salt_a
+                     and not _flush_recent(session, b.id, day))
         inp = BlockInputs(
             block_id=str(b.id), crop=crop, days_after_planting=(day - b.planting_date).days, area_m2=b.area_m2,
             flow_l_per_h=b.flow_l_per_h, efficiency=b.efficiency, habit_minutes=b.habit_minutes,
             habit_source_id=str(b.habit_source_id), sources=states, tap_order=tap_order,
-            latest_ece=soil.ece if soil else None, flush_due=flush_due,
+            latest_ece=soil.ece if soil else None, flush_due=flush_due, groundwater_ids=groundwater,
         )
         bp = plan_block(inp, wx, settings, costs)
         if not wx_row:
             bp.fallbacks.append("no_sun_times")
+        if soil_stale:
+            bp.fallbacks.append("soil_test_stale")
         results.append((b, bp))
 
     runs = schedule_runs([BlockRun(str(b.id), bp.minutes) for b, bp in results], sunrise, sunset,

@@ -67,11 +67,11 @@ function Devices({ farm }: { farm: Farm }) {
     <section className="grid gap-3 rounded-3xl bg-panel p-5 ring-1 ring-line">
       <h3 className="text-lg font-bold">Tablets and sensors</h3>
       <p className="text-sm text-ink-soft">A farm tablet signs in with this key plus a worker's PIN. Sensors send readings with it to <code className="num">POST /api/v1/readings</code> (header <code>X-Api-Key</code>).</p>
-      <div className="flex gap-2">
-        <select className="rounded-xl border border-line bg-salt px-3 py-2" value={kind} onChange={(e) => setKind(e.target.value as 'kiosk' | 'sensor')}>
+      <div className="flex items-center gap-2">
+        <select className="h-9 px-3" value={kind} onChange={(e) => setKind(e.target.value as 'kiosk' | 'sensor')}>
           <option value="kiosk">Farm tablet</option><option value="sensor">Sensor</option>
         </select>
-        <button onClick={create} className="rounded-xl bg-ink px-4 py-2 font-semibold text-salt">Create key</button>
+        <button onClick={create} className="btn btn-primary">Create key</button>
       </div>
       {key && <p className="rounded-xl bg-dune/10 p-3 text-sm">Copy this key now; it is shown only once:<br /><code className="num break-all text-base">{key}</code></p>}
       {msg && <p className="text-brine">{msg}</p>}

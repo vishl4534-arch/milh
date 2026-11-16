@@ -28,6 +28,7 @@ class FarmSettings(BaseModel):
     rain_threshold_mm: float = Field(5.0, ge=0)
     flush_extra_mm: float = Field(20.0, ge=0, le=200)
     stale_ec_days: int = Field(14, ge=1)
+    stale_soil_days: int = Field(60, ge=1)  # an older soil test no longer triggers a flush day
     earliest_start: str = Field("05:00", pattern=HHMM)
     morning_overrun_min: int = Field(120, ge=0, le=600)
     evening_offset_min: int = Field(30, ge=0, le=300)

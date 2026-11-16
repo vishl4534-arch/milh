@@ -173,6 +173,9 @@ export interface Plan {
   saved_aed: number
   habit_yield_pct: number | null
   plan_yield_pct: number | null
+  habit_well_l?: number | null
+  plan_well_l?: number | null
+  aquifer_saved_l?: number | null
   explanation: Record<string, unknown>
   text: I18nText
   fallbacks: string[]
@@ -298,9 +301,13 @@ export interface WaterReport {
     habit_l: number
     saved_l: number
     saved_aed: number
+    aquifer_saved_l?: number
     adherence_pct: number | null
   }[]
-  totals: { planned_l: number; actual_l: number | null; habit_l: number; saved_l: number; saved_aed: number }
+  totals: {
+    planned_l: number; actual_l: number | null; habit_l: number; saved_l: number; saved_aed: number
+    aquifer_saved_l?: number
+  }
 }
 
 export interface Alert {

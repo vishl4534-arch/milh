@@ -21,6 +21,7 @@ class DayRow:
     habit_l: float = 0.0
     saved_l: float = 0.0
     saved_aed: float = 0.0
+    aquifer_saved_l: float = 0.0
     adherence_pct: int | None = None
 
 
@@ -31,6 +32,7 @@ class Totals:
     habit_l: float = 0.0
     saved_l: float = 0.0
     saved_aed: float = 0.0
+    aquifer_saved_l: float = 0.0
 
 
 @dataclass
@@ -58,6 +60,7 @@ def water_report(session: Session, farm_id: uuid.UUID, start: date, end: date) -
         r.habit_l += p.habit_l
         r.saved_l += p.saved_l
         r.saved_aed += p.saved_aed
+        r.aquifer_saved_l += float((p.explanation or {}).get("aquifer_saved_l") or 0.0)
         if p.id in events_by_plan:
             r.actual_l = (r.actual_l or 0.0) + events_by_plan[p.id]
     report = WaterReport(start, end, sorted(rows.values(), key=lambda r: r.day))
@@ -65,6 +68,8 @@ def water_report(session: Session, farm_id: uuid.UUID, start: date, end: date) -
     for r in report.days:
         r.planned_l, r.habit_l, r.saved_l = round(r.planned_l), round(r.habit_l), round(r.saved_l)
         r.saved_aed = round(r.saved_aed, 2)
+        r.aquifer_saved_l = round(r.aquifer_saved_l)
+        t.aquifer_saved_l += r.aquifer_saved_l
         if r.actual_l is not None:
             r.actual_l = round(r.actual_l)
             r.adherence_pct = round(r.actual_l / r.planned_l * 100) if r.planned_l else None

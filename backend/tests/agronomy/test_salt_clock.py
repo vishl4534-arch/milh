@@ -59,6 +59,24 @@ def test_old_series_is_anchored_at_last_reading_not_extrapolated_to_today() -> N
     assert c.suggested_crops == ["barley"]        # horizon counted from the last reading
 
 
+def test_old_survey_is_not_stitched_to_a_new_reading() -> None:
+    # A 1991-2010 survey (with its own 12-year gap) plus one reading today: the trend comes from the survey
+    # only, reported as of 2010, and today's single reading does not bend the line.
+    survey = [(date(1991, 7, 1), 2.5), (date(1993, 7, 1), 3.46), (date(2005, 7, 1), 10.33), (date(2010, 7, 1), 15.36)]
+    today = date(2026, 11, 16)
+    c = salt_clock([*survey, (today, 6.0)], DATE_PALM, LIB, today=today)
+    alone = salt_clock(survey, DATE_PALM, LIB, today=today)
+    assert c.status == "ok" and c.stale is True and c.as_of == date(2010, 7, 1)
+    assert c.current_ecw == pytest.approx(alone.current_ecw)
+    assert c.n_readings == 4
+
+
+def test_recent_run_wins_once_it_has_enough_readings() -> None:
+    old = [(date(2005, 1, 1) + timedelta(days=30 * i), 9.0) for i in range(4)]
+    c = salt_clock([*old, *READ], DATE_PALM, LIB, today=D0 + timedelta(90))
+    assert c.stale is False and c.current_ecw == pytest.approx(3.3)
+
+
 def test_crossing_inside_the_series_reports_when_it_happened() -> None:
     # Yearly series rising 1 dS/m per year from 3.0: date palm 10 % loss (ECw 4.52) is crossed ~1.5 years in.
     yearly = [(date(2000 + i, 7, 1), 3.0 + i) for i in range(5)]

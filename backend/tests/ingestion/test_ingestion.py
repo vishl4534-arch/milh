@@ -69,6 +69,24 @@ def test_jump_flag_and_alert(session, farm_setup) -> None:
     assert [a.type for a in alerts] == ["water_ec_jump"]
 
 
+def test_drop_in_salt_is_flagged_but_not_alerted(session, farm_setup) -> None:
+    owner, farm, well, *_ = farm_setup
+    prov = Provenance("manual", owner.id, None)
+    ingest(session, [_r(farm.id, source_id=well.id, value=6.0, measured_at=NOW - timedelta(days=7))], prov, now=NOW)
+    res = ingest(session, [_r(farm.id, source_id=well.id, value=3.0)], prov, now=NOW)
+    assert res[0].flags == ["jump"]
+    assert session.scalars(select(Alert)).all() == []
+
+
+def test_jump_against_years_old_reading_is_not_alerted(session, farm_setup) -> None:
+    owner, farm, well, *_ = farm_setup
+    prov = Provenance("manual", owner.id, None)
+    old = datetime(2010, 7, 1, tzinfo=UTC)
+    ingest(session, [_r(farm.id, source_id=well.id, value=3.0, measured_at=old)], prov, now=NOW)
+    ingest(session, [_r(farm.id, source_id=well.id, value=6.0)], prov, now=NOW)
+    assert session.scalars(select(Alert)).all() == []
+
+
 def test_tank_low_raises_alert(session, farm_setup) -> None:
     owner, farm, *_rest, tank = farm_setup
     ingest(session, [_r(farm.id, metric="tank_level_pct", value=20, unit="%", tank_id=tank.id)],

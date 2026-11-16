@@ -150,15 +150,16 @@ function TopBar({ state, lang, now, onLang }: KioskViewProps) {
   const today = b.weather?.daily.find((d) => d.day === b.day)
   const temp = b.weather?.current.temperature_2m
   return (
-    <header className="card-in flex flex-wrap items-center gap-x-5 gap-y-3">
-      <MilhLogo className="h-10 w-auto shrink-0" />
+    <header className="card-in flex flex-wrap items-center gap-x-5 gap-y-3 border-b border-[var(--k-line)] pb-4">
+      <MilhLogo className="h-8 w-auto shrink-0" />
       <Divider />
-      <span className="text-xl font-extrabold">{t(greetingKey(now, tz))}</span>
-      <Divider />
-      <span className="flex min-w-0 items-center gap-1.5 text-lg text-[var(--k-muted)]">
-        <MapPin className="shrink-0 text-xl" />
-        <span className="truncate font-semibold">{b.farm.name}</span>
-        {b.farm.example_label && <span className="ms-1 rounded-md bg-[var(--k-sand-soft)] px-2 py-0.5 text-xs">example setup</span>}
+      <span className="min-w-0">
+        <span className="block text-lg font-semibold leading-tight">{t(greetingKey(now, tz))}</span>
+        <span className="flex items-center gap-1 text-[0.9375rem] text-[var(--k-muted)]">
+          <MapPin className="shrink-0" />
+          <span className="truncate">{b.farm.name}</span>
+          {b.farm.example_label && <span className="chip chip-neutral ms-1 h-5 text-[0.6875rem]">example setup</span>}
+        </span>
       </span>
       <div className="ms-auto flex flex-wrap items-center gap-x-5 gap-y-2">
         {state.offline && (
@@ -167,30 +168,30 @@ function TopBar({ state, lang, now, onLang }: KioskViewProps) {
           </span>
         )}
         {b.weather ? (
-          <span className="flex items-center gap-3 text-base text-[var(--k-muted)]">
-            <span className="flex items-center gap-1"><Thermo className="text-lg text-dune" />
-              <span className="num text-lg font-bold text-[var(--k-ink)]">{typeof temp === 'number' ? Math.round(temp) : '–'}°</span>
+          <span className="flex items-center divide-x divide-[var(--k-line)] rounded-lg border border-[var(--k-line)] bg-white text-[0.9375rem] text-[var(--k-muted)]">
+            <span className="flex items-center gap-1.5 px-3 py-1.5"><Thermo />
+              <span className="num font-semibold text-[var(--k-ink)]">{typeof temp === 'number' ? Math.round(temp) : '–'}°</span>
               {today && <span className="num">/ {Math.round(today.tmax_c)}°</span>}
             </span>
             {b.sun && (
               <>
-                <span className="flex items-center gap-1" title={t('kiosk.sunrise')}><Sunrise className="text-xl text-dune" /><span className="num">{hhmm(b.sun.sunrise, tz)}</span></span>
-                <span className="flex items-center gap-1" title={t('kiosk.sunset')}><Sunset className="text-xl" /><span className="num">{hhmm(b.sun.sunset, tz)}</span></span>
+                <span className="flex items-center gap-1.5 px-3 py-1.5" title={t('kiosk.sunrise')}><Sunrise /><span className="num text-[var(--k-ink)]">{hhmm(b.sun.sunrise, tz)}</span></span>
+                <span className="flex items-center gap-1.5 px-3 py-1.5" title={t('kiosk.sunset')}><Sunset /><span className="num text-[var(--k-ink)]">{hhmm(b.sun.sunset, tz)}</span></span>
               </>
             )}
             {b.weather.age_h > FORECAST_STALE_H && (
-              <span className="rounded-full bg-dune px-3 py-0.5 text-sm font-bold text-white">{t('kiosk.forecastAge', { age: ageText(b.weather.age_h, t) })}</span>
+              <span className="px-3 py-1.5 font-semibold text-[var(--k-amber)]">{t('kiosk.forecastAge', { age: ageText(b.weather.age_h, t) })}</span>
             )}
           </span>
         ) : (
           <span className="text-base text-[var(--k-muted)]">{t('empty.noForecast')}</span>
         )}
-        <span className="num text-3xl font-extrabold">{hhmm(now, tz)}</span>
+        <span className="num text-[1.75rem] font-semibold">{hhmm(now, tz)}</span>
         {b.farm.languages.length > 1 && (
-          <div role="group" aria-label={t('kiosk.lang')} className="flex items-center rounded-full bg-[var(--k-sand)] p-1">
+          <div role="group" aria-label={t('kiosk.lang')} className="flex items-center rounded-lg bg-[var(--k-sand)] p-1">
             {b.farm.languages.map((l) => (
               <button key={l} type="button" onClick={() => onLang(l)} aria-pressed={l === lang}
-                className={`press min-w-14 rounded-full px-4 py-1.5 text-lg font-bold transition-colors duration-200 ${l === lang ? 'bg-white text-[var(--k-ink)] shadow-sm' : 'text-[var(--k-ink)]/60'}`}>
+                className={`press min-w-14 rounded-md px-3.5 py-1.5 text-base font-semibold transition-colors duration-150 ${l === lang ? 'bg-white text-[var(--k-ink)] shadow-[0_1px_2px_rgb(17_21_19/0.08)]' : 'text-[var(--k-muted)]'}`}>
                 {LANG_LABEL[l] ?? l}
               </button>
             ))}
@@ -210,14 +211,14 @@ function TabBar({ tab, onTab, rtl }: { tab: Tab; onTab: (t: Tab) => void; rtl: b
   const labels: Record<Tab, string> = { today: t('kiosk.today'), water: t('kiosk.water'), soil: t('kiosk.soil') }
   return (
     <div role="tablist" aria-label={t('kiosk.tabs')}
-      className="card-in relative mx-auto grid w-full max-w-5xl grid-cols-[repeat(3,minmax(0,1fr))] rounded-[1.5rem] bg-white p-1.5 shadow-[0_14px_34px_-24px_rgba(92,74,40,.45)]"
+      className="card-in relative grid w-full max-w-xl grid-cols-[repeat(3,minmax(0,1fr))] rounded-xl bg-[var(--k-sand)] p-1"
       style={{ animationDelay: '60ms' }}>
-      <span aria-hidden className="tab-glide absolute inset-y-1.5 start-1.5 w-[calc((100%-0.75rem)/3)] rounded-[1.15rem] bg-[var(--k-green)] shadow-[0_10px_22px_-12px_rgba(47,107,79,.9)]"
+      <span aria-hidden className="tab-glide absolute inset-y-1 start-1 w-[calc((100%-0.5rem)/3)] rounded-[9px] bg-white shadow-[0_1px_3px_rgb(17_21_19/0.1),0_0_0_1px_rgb(17_21_19/0.04)]"
         style={{ transform: `translateX(${(rtl ? -1 : 1) * idx * 100}%)` }} />
       {TABS.map((k) => (
         <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => onTab(k)}
-          className={`press relative z-10 flex items-center justify-center gap-1.5 rounded-[1.15rem] py-2.5 text-lg font-extrabold sm:gap-2.5 sm:text-xl transition-colors duration-300 md:text-2xl ${tab === k ? 'text-white' : 'text-[var(--k-ink)]'}`}>
-          <span className="text-xl sm:text-2xl">{icons[k]}</span>{labels[k]}
+          className={`press relative z-10 flex items-center justify-center gap-2 rounded-[9px] py-2.5 text-lg font-semibold transition-colors duration-200 ${tab === k ? 'text-[var(--k-ink)]' : 'text-[var(--k-muted)]'}`}>
+          <span className={`text-xl ${tab === k ? 'text-[var(--k-green)]' : ''}`}>{icons[k]}</span>{labels[k]}
         </button>
       ))}
     </div>
@@ -262,23 +263,26 @@ function JobCard({ run, focus, hasRuns, state, lang, now, onDone, onListen, onBu
   const skipped = run.steps.length === 0
   const flowing = running ? activeStep(run, now) : -1
   const badge = run.done ? ['bg-[var(--k-green-soft)] text-[var(--k-green)]', t('kiosk.doneSaved')]
-    : overdue ? ['bg-dune text-white', t('kiosk.unconfirmed')]
-      : running ? ['bg-water text-white', t('kiosk.now')]
+    : overdue ? ['bg-[var(--k-amber-soft)] text-[var(--k-amber)]', t('kiosk.unconfirmed')]
+      : running ? ['bg-[var(--k-water)] text-white', t('kiosk.now')]
         : run === focus ? ['bg-[var(--k-sand)] text-[var(--k-ink)]', t('kiosk.next')] : ['bg-[var(--k-sand-soft)] text-[var(--k-muted)]', t('kiosk.later')]
   return (
     <section key={run.plan_id} aria-label={t('kiosk.now')} className="k-card card-in flex flex-col p-6 md:px-8 md:py-6" style={{ animationDelay: '120ms' }}>
-      <div className="grid flex-1 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4">
-        <div className="flex h-full min-w-0 flex-col">
+      <div className="grid flex-1 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-6">
+        <div className="flex h-full min-w-0 flex-col justify-center">
           {!skipped && (
-            <span className={`inline-flex items-center gap-2 self-start whitespace-nowrap rounded-full px-3 py-1 text-xs font-extrabold uppercase tracking-wider md:px-3.5 md:text-sm ${badge[0]}`}>
+            <span className={`inline-flex h-7 items-center gap-2 self-start whitespace-nowrap rounded-md px-2.5 text-[0.8125rem] font-semibold uppercase tracking-[0.06em] ${badge[0]}`}>
               {running && <span aria-hidden className="twinkle size-2 rounded-full bg-white" />}{badge[1]}
             </span>
           )}
-          <h2 className="mt-2 text-4xl font-black leading-[1.05] tracking-tight md:text-5xl">{run.block_name}</h2>
-          <p className="mt-1 text-2xl font-semibold text-[var(--k-muted)]">{pick(run.crop_names, lang)}</p>
-          <div className="relative mt-1 flex min-h-32 flex-1 items-end justify-center">
-            <div aria-hidden className="absolute inset-x-6 bottom-1 h-8 rounded-[50%] bg-[radial-gradient(ellipse_at_center,rgba(138,100,64,.18)_0%,transparent_70%)]" />
-            <CropArt crop={block?.crop_key ?? ''} sway={running || dial === 'upcoming'} className="relative h-full max-h-40 w-full" />
+          <div className="mt-4 flex items-center gap-4">
+            <span className="grid size-20 shrink-0 place-items-center rounded-xl border border-[var(--k-line)] bg-[var(--k-sand-soft)] md:size-24">
+              <CropArt crop={block?.crop_key ?? ''} sway={running} className="size-16 md:size-20" />
+            </span>
+            <div className="min-w-0">
+              <h2 className="truncate text-4xl font-semibold leading-[1.05] tracking-tight md:text-5xl">{run.block_name}</h2>
+              <p className="mt-1.5 text-xl text-[var(--k-muted)] md:text-2xl">{pick(run.crop_names, lang)}</p>
+            </div>
           </div>
         </div>
         {!skipped && (
@@ -292,45 +296,47 @@ function JobCard({ run, focus, hasRuns, state, lang, now, onDone, onListen, onBu
         <SkipLine reason={run.skip_reason} className="mt-4 justify-center text-2xl font-bold" />
       ) : (
         <>
-          <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-base text-[var(--k-muted)]">
-            <span className="line-through">{t('kiosk.instead', { n: run.habit_minutes })}</span>
+          <div className="mt-5 flex flex-wrap items-center gap-2 text-[0.9375rem] text-[var(--k-muted)]">
+            <span className="num line-through decoration-[var(--k-faint)]">{t('kiosk.instead', { n: run.habit_minutes })}</span>
             {run.saved_l > 0 && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-water/10 px-3 py-0.5 font-semibold text-water">
-                <DropIcon className="size-4" color="currentColor" /> {t('kiosk.saves', { l: litres(run.saved_l) })}
+              <span className="chip chip-blue h-7 text-[0.875rem]">
+                <DropIcon className="size-3.5" color="currentColor" /> {t('kiosk.saves', { l: litres(run.saved_l) })}
               </span>
             )}
-            {run.flush && <span className="rounded-full bg-water/10 px-3 py-0.5 font-semibold text-water">{t('kiosk.flush')}</span>}
+            {run.flush && <span className="chip chip-blue h-7 text-[0.875rem]">{t('kiosk.flush')}</span>}
             <Fallbacks codes={run.fallbacks} />
             <button type="button" onClick={() => setWhy((w) => !w)} aria-expanded={why}
-              className="ms-auto text-sm font-bold underline-offset-4 hover:underline">{t('kiosk.why')}</button>
+              className="ms-auto h-9 rounded-lg px-3 text-[0.9375rem] font-medium text-[var(--k-ink)] hover:bg-[var(--k-sand)]">{t('kiosk.why')}</button>
             <button type="button" onClick={() => onListen(startAnn, run)} aria-label={t('common.listen')}
-              className="press grid size-11 shrink-0 place-items-center rounded-xl bg-[var(--k-sand)] text-xl text-[var(--k-ink)]">
+              className="press grid size-10 shrink-0 place-items-center rounded-lg border border-[var(--k-line-strong)] bg-white text-lg text-[var(--k-ink)]">
               <Speaker />
             </button>
           </div>
-          <div className="mt-3 grid gap-3" style={{ gridTemplateColumns: `repeat(${Math.min(run.steps.length, 3)}, minmax(0, 1fr))` }}>
+          <div className="mt-3 grid gap-2.5" style={{ gridTemplateColumns: `repeat(${Math.min(run.steps.length, 3)}, minmax(0, 1fr))` }}>
             {run.steps.map((s, i) => (
               <div key={`${s.source_id}-${i}`} data-testid="pipe-step"
-                className={`flex items-center justify-center gap-2 rounded-2xl px-4 py-3.5 text-xl font-extrabold transition-shadow duration-300 ${flowing === i ? 'ring-[3px]' : ''}`}
-                style={{ background: `color-mix(in srgb, ${s.tap_color} 16%, white)`, ['--tw-ring-color' as string]: s.tap_color }}>
+                className={`relative flex items-center gap-3 overflow-hidden rounded-xl border bg-white px-4 py-3.5 transition-shadow duration-300 ${flowing === i ? 'shadow-[0_0_0_3px_var(--ring)]' : ''}`}
+                style={{ borderColor: `color-mix(in srgb, ${s.tap_color} 35%, white)`, ['--ring' as string]: `color-mix(in srgb, ${s.tap_color} 30%, transparent)` }}>
+                <span aria-hidden className="absolute inset-y-0 start-0 w-1.5" style={{ background: s.tap_color }} />
                 <span aria-hidden className={`size-3 shrink-0 rounded-full ${flowing === i ? 'twinkle' : ''}`} style={{ background: s.tap_color }} />
-                <span className="truncate">{pick(s.tap_label, lang)}</span>
-                <span aria-hidden>·</span>
-                <span className="num whitespace-nowrap">{s.minutes}</span>
-                <span className="text-base font-bold">{t('common.minutes')}</span>
+                <span className="truncate text-lg font-semibold capitalize">{pick(s.tap_label, lang)}</span>
+                <span className="ms-auto flex items-baseline gap-1 whitespace-nowrap">
+                  <span className="num text-2xl font-semibold">{s.minutes}</span>
+                  <span className="text-sm text-[var(--k-muted)]">{t('common.minutes')}</span>
+                </span>
               </div>
             ))}
           </div>
-          {why && <p className="fade-in mt-2 max-w-prose text-sm leading-relaxed text-[var(--k-muted)]">{pick(run.text, lang)}</p>}
-          <div className="mt-3">
+          {why && <p className="fade-in mt-3 max-w-prose rounded-lg bg-[var(--k-sand-soft)] px-4 py-3 text-[0.9375rem] leading-relaxed text-[var(--k-muted)]">{pick(run.text, lang)}</p>}
+          <div className="mt-4">
             {run.done ? (
-              <div className="flex h-16 items-center justify-center gap-3 rounded-2xl bg-[var(--k-green-soft)] text-2xl font-extrabold text-[var(--k-green)]">
-                <Check className="text-3xl" /> {t('kiosk.doneSaved')}
+              <div className="flex h-16 items-center justify-center gap-3 rounded-xl bg-[var(--k-green-soft)] text-xl font-semibold text-[var(--k-green)]">
+                <Check className="text-2xl" /> {t('kiosk.doneSaved')}
               </div>
             ) : (
               <button type="button" onClick={(e) => { onBurst(e); onDone(run) }}
-                className="press flex h-16 w-full items-center justify-center gap-3 rounded-2xl bg-[var(--k-green)] text-2xl font-extrabold text-white shadow-[0_14px_30px_-14px_rgba(47,107,79,.95)] active:bg-palm-deep">
-                <Check className="text-3xl" /> {t('kiosk.done')}
+                className="press flex h-16 w-full items-center justify-center gap-3 rounded-xl bg-[var(--k-green)] text-xl font-semibold text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.12),0_1px_2px_rgb(10_82_57/0.4)] hover:bg-[var(--k-green-deep)]">
+                <Check className="text-2xl" /> {t('kiosk.done')}
               </button>
             )}
           </div>
@@ -356,7 +362,7 @@ function Fallbacks({ codes }: { codes: string[] }) {
   return (
     <>
       {shown.map((c) => (
-        <span key={c} className="inline-flex items-center gap-1.5 rounded-full bg-dune/12 px-3 py-0.5 font-semibold text-dune">
+        <span key={c} className="chip chip-amber h-7 text-[0.875rem]">
           <Warn /> {t(`fallback.${c}`, { defaultValue: c })}
         </span>
       ))}
@@ -369,7 +375,10 @@ function Timeline({ runs, tz, lang, selected, onPick }: { runs: KRun[]; tz: stri
   const { t } = useTranslation()
   return (
     <section aria-label={t('kiosk.later')} className="k-card card-in flex flex-col p-6 md:p-8" style={{ animationDelay: '180ms' }}>
-      <h3 className="mb-4 text-4xl font-black tracking-tight">{t('kiosk.today')}</h3>
+      <div className="mb-4 flex items-baseline justify-between">
+        <h3 className="text-xl font-semibold">{t('kiosk.today')}</h3>
+        <span className="num text-[0.9375rem] text-[var(--k-muted)]">{runs.filter((r) => r.done).length} / {runs.filter((r) => r.steps.length > 0).length} ✓</span>
+      </div>
       {runs.length === 0 ? <p className="text-xl text-[var(--k-muted)]">{t('kiosk.noPlan')}</p> : (
         <ol className="flex flex-col gap-1">
           {runs.map((r, i) => {
@@ -377,25 +386,28 @@ function Timeline({ runs, tz, lang, selected, onPick }: { runs: KRun[]; tz: stri
             const last = i === runs.length - 1
             return (
               <li key={r.plan_id} className="card-in relative" style={{ animationDelay: `${240 + i * STAGGER_MS}ms` }}>
-                {!last && <span aria-hidden className={`absolute start-[2.1rem] top-[3.4rem] bottom-[-0.9rem] w-[3px] rounded-full ${r.done ? 'bg-[var(--k-green)]' : 'bg-[var(--k-sand)]'}`} />}
+                {!last && <span aria-hidden className={`absolute start-[1.95rem] top-[3.1rem] bottom-[-0.6rem] w-0.5 ${r.done ? 'bg-[var(--k-green)]' : 'bg-[var(--k-line)]'}`} />}
                 <button type="button" onClick={() => onPick(r)}
-                  className={`press grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 rounded-2xl px-3 py-3 text-start transition-colors duration-300 ${current ? 'bg-[var(--k-green-soft)]' : 'hover:bg-[var(--k-sand-soft)]'}`}>
-                  <span className={`relative grid size-11 place-items-center rounded-full text-xl ${
+                  className={`press grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 rounded-xl border px-3 py-2.5 text-start transition-colors duration-200 ${current ? 'border-[var(--k-line-strong)] bg-[var(--k-sand-soft)]' : 'border-transparent hover:bg-[var(--k-sand-soft)]'}`}>
+                  <span className={`relative grid size-9 place-items-center rounded-full text-lg ${
                     r.done ? 'bg-[var(--k-green)] text-white'
-                      : r.skip_reason ? 'bg-water/12 text-water'
-                        : current ? 'border-[5px] border-[var(--k-green)] bg-white' : 'border-[3px] border-[var(--k-sand)] bg-white'}`}>
+                      : r.skip_reason ? 'bg-[var(--k-water-soft)] text-[var(--k-water)]'
+                        : current ? 'border-[3px] border-[var(--k-green)] bg-white' : 'border-2 border-[var(--k-line-strong)] bg-white'}`}>
                     {r.done && <Check label={t('kiosk.doneSaved')} />}
                     {!r.done && r.skip_reason === 'rain' && <Rain />}
                   </span>
                   <span className="min-w-0">
-                    <span className="num block text-base font-semibold text-[var(--k-muted)]">{r.start ? hhmm(r.start, tz) : '—'}</span>
-                    <span className="block truncate text-2xl font-extrabold leading-tight">{r.block_name}</span>
-                    {r.skip_reason ? <SkipLine reason={r.skip_reason} className="text-base font-semibold" />
-                      : <span className="block truncate text-lg text-[var(--k-muted)]">{pick(r.crop_names, lang)}</span>}
+                    <span className="block truncate text-xl font-semibold leading-tight">{r.block_name}</span>
+                    <span className="flex items-center gap-2 text-[0.9375rem] text-[var(--k-muted)]">
+                      <span className="num">{r.start ? hhmm(r.start, tz) : '—'}</span>
+                      <span aria-hidden>·</span>
+                      {r.skip_reason ? <SkipLine reason={r.skip_reason} className="text-[0.9375rem]" />
+                        : <span className="truncate">{pick(r.crop_names, lang)}</span>}
+                    </span>
                   </span>
                   {!r.skip_reason && (
-                    <span className="num whitespace-nowrap rounded-xl bg-[var(--k-sand-soft)] px-3.5 py-2 text-xl font-extrabold">
-                      {r.minutes} <span className="text-base font-bold">{t('common.minutes')}</span>
+                    <span className="flex items-baseline gap-1 whitespace-nowrap">
+                      <span className="num text-2xl font-semibold">{r.minutes}</span> <span className="text-sm text-[var(--k-muted)]">{t('common.minutes')}</span>
                     </span>
                   )}
                 </button>
@@ -527,7 +539,8 @@ function SoilTab({ blocks, lang, tz, today }: { blocks: KBlock[]; lang: Lang; tz
             {b.next_test_due && (
               <div className={`col-span-2 flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-lg font-bold md:col-span-1 ${due ? 'bg-dune text-white' : 'bg-[var(--k-sand)]'}`}>
                 <Calendar className="text-xl" />
-                {due ? t('kiosk.testDue') : t('kiosk.nextTest')} · <span className="num">{dayMonth(b.next_test_due, tz)}</span>
+                {b.next_test_due < today ? t('kiosk.testOverdue')
+                  : <>{due ? t('kiosk.testDue') : t('kiosk.nextTest')} · <span className="num">{dayMonth(b.next_test_due, tz)}</span></>}
               </div>
             )}
           </div>
@@ -548,13 +561,12 @@ function Dock({ nextAnn, run, tz, lang, canAsk, onAsk, onListen }: {
       {/* The next announcement; with none left today, the job on screen is read instead. */}
       <button type="button" onClick={() => (nextAnn ? onListen(nextAnn) : onListen(null, run ?? undefined))}
         disabled={!nextAnn && !run} aria-label={t('common.listen')}
-        className="press grid size-14 shrink-0 place-items-center rounded-2xl bg-[var(--k-sand)] text-3xl disabled:opacity-40">
+        className="press grid size-12 shrink-0 place-items-center rounded-lg bg-[var(--k-ink)] text-2xl text-white disabled:opacity-30">
         <Speaker />
       </button>
-      <span aria-hidden className="h-10 w-px shrink-0 bg-[var(--k-ink)]/10" />
-      <p className="min-w-0 flex-1 truncate text-xl">
+      <p className="min-w-0 flex-1 truncate text-lg">
         {nextAnn ? (
-          <><span className="font-extrabold text-[var(--k-green)]">{t('kiosk.nextLabel')}</span> <span className="num font-semibold">{hhmm(nextAnn.scheduled_at, tz)}</span> {pick(nextAnn.text, lang)}</>
+          <><span className="eyebrow me-2 text-[var(--k-green)]">{t('kiosk.nextLabel')}</span><span className="num me-2 font-semibold">{hhmm(nextAnn.scheduled_at, tz)}</span>{pick(nextAnn.text, lang)}</>
         ) : <span className="text-[var(--k-muted)]">{t('kiosk.noAnnouncements')}</span>}
       </p>
       {canAsk && (

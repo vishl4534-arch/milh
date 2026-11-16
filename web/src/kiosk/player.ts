@@ -1,6 +1,7 @@
 import type { KAnnouncement } from '../api/types'
 import { pick } from '../i18n'
 import { audioUrl } from './offline'
+import { speakNatural } from './speech'
 
 /** How late an announcement may be and still play (e.g. the tablet woke up a little late). */
 const LATE_LIMIT_MS = 10 * 60 * 1000
@@ -98,18 +99,10 @@ function playUrl(url: string): Promise<void> {
   })
 }
 
-function speak(text: string, lang: string): Promise<void> {
-  return new Promise((resolve) => {
-    if (!('speechSynthesis' in window) || !text) return resolve()
-    const u = new SpeechSynthesisUtterance(text)
-    u.lang = lang
-    u.onend = () => resolve()
-    u.onerror = () => resolve()
-    window.speechSynthesis.speak(u)
-  })
-}
+const speak = speakNatural
 
-/** Chime, then the cached ElevenLabs clip. With no clip, the browser's own voice reads the text. */
+/** Chime, then the cached ElevenLabs clip. With no clip, the device's best voice reads the text with
+ *  natural phrasing (see speech.ts). */
 export async function playAnnouncement(a: KAnnouncement, lang: string): Promise<void> {
   try {
     await playUrl('/chime.wav')

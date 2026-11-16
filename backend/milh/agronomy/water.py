@@ -31,6 +31,27 @@ def leaching_requirement(ecw: float, ece_threshold: float) -> float | None:
     return ecw / denom
 
 
+MIN_LF = 0.05  # below this the steady-state relation is not meaningful; treat as "almost no leaching"
+
+
+def leaching_fraction(applied_l: float, need_mm: float, area_m2: float, efficiency: float) -> float:
+    """Share of the water that reaches the soil and drains below the roots, given what was applied.
+
+    Infiltrated = applied x efficiency; the crop uses `need_mm`; the rest drains. Clamped to [MIN_LF, 0.95].
+    """
+    infiltrated_mm = applied_l * efficiency / area_m2 if area_m2 > 0 else 0.0
+    if infiltrated_mm <= 0:
+        return MIN_LF
+    return max(MIN_LF, min(0.95, 1.0 - need_mm / infiltrated_mm))
+
+
+def ece_from_lf(ecw: float, lf: float) -> float:
+    """Root-zone salinity a leaching fraction produces: the FAO-29 LR equation solved for ECe,
+    ECe = ECw (1 + LF) / (5 LF). At LF = 0.15 this gives ~1.5 x ECw, the FAO-29 rule of thumb."""
+    lf = max(MIN_LF, lf)
+    return ecw * (1.0 + lf) / (5.0 * lf)
+
+
 def gross_volume_l(net_mm: float, area_m2: float, lr: float, efficiency: float) -> float:
     """1 mm over 1 m2 is 1 litre."""
     return net_mm * area_m2 / ((1.0 - lr) * efficiency)

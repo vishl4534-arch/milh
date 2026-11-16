@@ -45,6 +45,7 @@
     "salt": "Salt",
     "nextTest": "Next test",
     "testDue": "Test due",
+    "testOverdue": "Test overdue: test now",
     "addReading": "Add reading",
     "announcements": "Announcements",
     "sunrise": "Sunrise",
@@ -119,7 +120,8 @@
     "no_forecast": "No forecast: usual routine used",
     "no_water_ec": "No water salt reading: usual routine used",
     "no_sun_times": "No sunrise time: default schedule",
-    "water_ec_stale": "Water salt reading is old"
+    "water_ec_stale": "Water salt reading is old",
+    "soil_test_stale": "Soil test is old: no flush day until a new test"
   },
   "voice": {
     "starting": "Starting the microphone…",

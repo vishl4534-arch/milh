@@ -51,7 +51,10 @@ def test_elevenlabs_request_shape() -> None:
         assert tts.synthesize("سلام", "ur") == b"ID3audio"
     req = route.calls.last.request
     assert req.headers["xi-api-key"] == "key-123"
-    assert json.loads(req.content) == {"text": "سلام", "model_id": "eleven_multilingual_v2"}
+    body = json.loads(req.content)
+    assert body["text"] == "سلام" and body["model_id"] == "eleven_multilingual_v2"
+    # Expressive delivery: low enough stability for natural rise and fall, some style for emphasis.
+    assert body["voice_settings"]["stability"] < 0.5 and body["voice_settings"]["style"] > 0
 
 
 def test_elevenlabs_missing_voice_raises() -> None:

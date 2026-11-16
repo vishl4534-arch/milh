@@ -18,7 +18,7 @@ function ArtPanel({ sources }: { sources: string[] }) {
   const [pick, setPick] = useState(0)
   const serif = i18n.language === 'ur' ? 'font-urdu' : 'font-serif'
   return (
-    <aside className="relative hidden overflow-hidden rounded-[2rem] bg-[#0e1f18] md:block">
+    <aside className="relative hidden overflow-hidden rounded-2xl bg-[#0c100e] md:block">
       {art !== 'ok' && (
         <div aria-hidden className="absolute inset-0 [&>div]:h-full [&>div]:rounded-none">
           <SkyScene tall now={now} sunrise={null} sunset={null} tz="Asia/Muscat" />
@@ -36,7 +36,7 @@ function ArtPanel({ sources }: { sources: string[] }) {
         <span aria-hidden className="h-px w-24 bg-white/60" />
       </div>
       <div className="absolute inset-x-10 bottom-10 text-white">
-        <h2 className={`rise-in max-w-md text-6xl leading-[0.95] lg:text-7xl xl:text-8xl ${serif}`}>{t('login.artTitle')}</h2>
+        <h2 className={`rise-in max-w-md text-5xl font-semibold leading-[1] tracking-tight lg:text-6xl ${serif}`}>{t('login.artTitle')}</h2>
         <p className="rise-in mt-5 max-w-sm text-base leading-relaxed text-white/85" style={{ animationDelay: '120ms' }}>
           {t('login.artBody')}
         </p>
@@ -60,27 +60,27 @@ function Shell({ art, eyebrow, title, subtitle, footer, children }: ShellProps) 
   const { i18n } = useTranslation()
   const serif = i18n.language === 'ur' ? 'font-urdu' : 'font-serif'
   return (
-    <div className="grid min-h-dvh gap-3 bg-panel p-3 md:grid-cols-2">
+    <div className="grid min-h-dvh gap-3 bg-[#f5f5f3] p-3 md:grid-cols-2">
       <ArtPanel sources={art} />
       <main className="flex min-h-[calc(100dvh-1.5rem)] flex-col px-4 py-4 sm:px-10">
-        <div className="flex justify-center"><MilhLogo className="h-10 w-auto" /></div>
-        <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center py-10">
-          <div className="rise-in text-center">
-            {eyebrow && <p className="mb-3 text-xs font-semibold uppercase tracking-[0.25em] text-palm">{eyebrow}</p>}
-            <h1 className={`text-5xl leading-none sm:text-6xl ${serif}`}>{title}</h1>
-            <p className="mt-4 text-ink-soft">{subtitle}</p>
+        <div className="flex"><MilhLogo className="h-8 w-auto" /></div>
+        <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-10">
+          <div className="rise-in">
+            {eyebrow && <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-palm">{eyebrow}</p>}
+            <h1 className={`text-3xl font-semibold tracking-tight ${serif}`}>{title}</h1>
+            <p className="mt-2 text-ink-soft">{subtitle}</p>
           </div>
-          <div className="rise-in mt-10" style={{ animationDelay: '80ms' }}>{children}</div>
+          <div className="rise-in mt-8" style={{ animationDelay: '80ms' }}>{children}</div>
         </div>
-        <p className="text-center text-ink-soft">{footer}</p>
+        <p className="text-sm text-ink-soft">{footer}</p>
       </main>
     </div>
   )
 }
 
-const field = 'mt-2 h-12 w-full rounded-xl bg-salt px-4 text-base ring-1 ring-line/80 transition-shadow duration-150 focus:outline-none focus:ring-2 focus:ring-palm'
+const field = 'mt-1.5 h-11 w-full rounded-lg border border-[#d4d6d1] bg-white px-3.5 text-[0.9375rem] transition-[border-color,box-shadow] duration-150 focus:border-[#0e6b4b] focus:outline-none focus:ring-[3px] focus:ring-[#0e6b4b]/15'
 const label = 'block text-sm font-medium'
-const submitBtn = 'press mt-3 h-12 w-full rounded-xl bg-ink text-base font-semibold text-salt shadow-[0_10px_24px_-12px_rgba(27,36,33,.9)] transition-colors duration-150 disabled:opacity-60 [@media(hover:hover)]:hover:bg-palm-deep'
+const submitBtn = 'press mt-2 h-11 w-full rounded-lg bg-[#0e6b4b] text-[0.9375rem] font-semibold text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.12),0_1px_2px_rgb(10_82_57/0.35)] transition-colors duration-150 disabled:opacity-60 [@media(hover:hover)]:hover:bg-[#0a5239]'
 
 function SecretInput({ value, onChange, autoComplete, pin = false }:
   { value: string; onChange: (v: string) => void; autoComplete?: string; pin?: boolean }) {

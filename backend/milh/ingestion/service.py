@@ -19,6 +19,7 @@ from milh.schemas.readings import ReadingIn
 
 FUTURE_TOLERANCE = timedelta(minutes=10)
 LIVE_ALERT_WINDOW = timedelta(days=7)
+JUMP_COMPARE_WINDOW = timedelta(days=90)
 REPLAN_METRICS = {"water_ec", "soil_ec_1to5", "soil_ece", "soil_ph", "soil_moisture_vwc"}
 
 
@@ -91,7 +92,10 @@ def _side_effects(session: Session, farm: Farm, reading: Reading, now: datetime)
         if prev is not None and prev.value > 0 and abs(reading.value - prev.value) / prev.value > s.ec_jump_ratio:
             reading.flags = [*reading.flags, "jump"]
             src = session.get(WaterSource, reading.source_id)
-            if live:
+            # Warn only when the water got saltier, compared with a reading recent enough to mean
+            # "it changed": a drop is good news, and a 2010 survey value is history, not yesterday.
+            recent_prev = (reading.measured_at - prev.measured_at) <= JUMP_COMPARE_WINDOW
+            if live and reading.value > prev.value and recent_prev:
                 alerts.raise_alert(session, farm.id, "water_ec_jump", "warning",
                                    {"source": src.name if src else "", "old": round(prev.value, 2),
                                     "new": round(reading.value, 2)}, subject=str(reading.source_id))

@@ -48,6 +48,9 @@ class PlanOut(BaseModel):
     saved_aed: float
     habit_yield_pct: float | None
     plan_yield_pct: float | None
+    habit_well_l: float | None
+    plan_well_l: float | None
+    aquifer_saved_l: float | None
     explanation: dict[str, Any]
     text: dict[str, str]
     fallbacks: list[str]
@@ -91,7 +94,9 @@ def plan_out(session: Session, plans: list[IrrigationPlan]) -> list[PlanOut]:
             start_at=p.start_at, end_at=p.end_at, minutes=p.minutes, steps=[StepOut(**s) for s in p.steps],
             gross_l=p.gross_l, fractions=p.fractions, ecw=p.ecw, lr=p.lr, cap_exceeded=p.cap_exceeded,
             flush=p.flush, habit_l=p.habit_l, saved_l=p.saved_l, saved_aed=p.saved_aed,
-            habit_yield_pct=p.habit_yield_pct, plan_yield_pct=p.plan_yield_pct, explanation=p.explanation,
+            habit_yield_pct=p.habit_yield_pct, plan_yield_pct=p.plan_yield_pct,
+            habit_well_l=p.explanation.get("habit_well_l"), plan_well_l=p.explanation.get("plan_well_l"),
+            aquifer_saved_l=p.explanation.get("aquifer_saved_l"), explanation=p.explanation,
             text=p.text, fallbacks=p.fallbacks, skip_reason=p.skip_reason, computed_at=p.computed_at,
         ))
     out.sort(key=lambda x: (x.start_at is None, x.start_at or datetime.max.replace(tzinfo=ZoneInfo("UTC"))))

@@ -63,10 +63,24 @@ def salt_clock(
 
     If the newest reading is older than `stale_after_days`, everything is reported as of that reading
     instead of today: a trend is never stretched across years with no data."""
-    pts = sorted(readings)
+    all_pts = sorted(readings)
+    # Never fit one line from an old survey straight into today's readings (e.g. 1991-2010 published data plus
+    # one meter reading taken this week). Split once, at the newest gap longer than `stale_after_days`:
+    # the recent run is used when it has enough readings; otherwise the older history is used, reported as
+    # of its own last reading (stale). A sparse survey whose own readings are years apart stays whole.
+    cut = 0
+    for i in range(1, len(all_pts)):
+        if (all_pts[i][0] - all_pts[i - 1][0]).days > stale_after_days:
+            cut = i
+    recent, older = all_pts[cut:], all_pts[:cut]
+
+    def usable(r: list[tuple[date, float]]) -> bool:
+        return len(r) >= min_readings and (r[-1][0] - r[0][0]).days >= min_span_days
+
+    pts = recent if usable(recent) else older if usable(older) else all_pts
     n = len(pts)
     span = (pts[-1][0] - pts[0][0]).days if pts else 0
-    if n < min_readings or span < min_span_days:
+    if not usable(pts):
         return SaltClock("collecting", n, span, None, None, None, None, None, None, [])
 
     d0 = pts[0][0]

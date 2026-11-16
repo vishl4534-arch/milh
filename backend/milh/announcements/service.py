@@ -7,7 +7,7 @@ from datetime import date, datetime, time, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from milh.announcements.build import BUILD_TYPES, AnnouncementDraft, RunForAnnounce, build_day
@@ -64,8 +64,13 @@ def rebuild_day(session: Session, farm_id: uuid.UUID, day: date, now: datetime) 
     s = get_farm_settings(farm)
     tz = ZoneInfo(farm.timezone)
     lo, hi = _day_bounds(day, tz)
+    day_plan_ids = list(session.scalars(select(IrrigationPlan.id).where(
+        IrrigationPlan.farm_id == farm_id, IrrigationPlan.day == day)))
+    # A long run can spill past midnight, so its tap announcements fall on the next calendar day: cancel
+    # those too (anything upcoming that belongs to one of this day's plans), not just this day's window.
     for old in session.scalars(select(Announcement).where(
-        Announcement.farm_id == farm_id, Announcement.scheduled_at >= max(lo, now), Announcement.scheduled_at < hi,
+        Announcement.farm_id == farm_id, Announcement.scheduled_at >= max(lo, now),
+        or_(Announcement.scheduled_at < hi, Announcement.plan_id.in_(day_plan_ids)),
         Announcement.status == "scheduled", Announcement.custom.is_(False), Announcement.type.in_(BUILD_TYPES),
     )):
         old.status = "cancelled"

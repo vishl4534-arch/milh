@@ -18,6 +18,7 @@ from pathlib import Path
 
 import httpx
 
+from milh.announcements.tts import VOICE_SETTINGS
 from milh.config import get_settings
 
 log = logging.getLogger("milh.assistant.voice")
@@ -173,7 +174,8 @@ class _Fetch:
                               params={"output_format": OUTPUT_FORMAT},
                               headers={"xi-api-key": _key(), "Content-Type": "application/json"},
                               json={"text": self.text, "model_id": s.elevenlabs_tts_model_assistant,
-                                    "language_code": LANG_CODES[self.lang]["tts"]}) as r:
+                                    "language_code": LANG_CODES[self.lang]["tts"],
+                                    "voice_settings": VOICE_SETTINGS}) as r:
                 if r.status_code != 200:
                     raise VoiceError(f"text-to-speech HTTP {r.status_code}: {r.read()[:200]!r}")
                 for chunk in r.iter_bytes():

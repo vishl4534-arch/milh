@@ -31,9 +31,9 @@ export function ReportsTab({ farm }: { farm: Farm }) {
         <button onClick={downloadCsv} className="rounded-xl px-3 py-2 ring-1 ring-line">Download CSV</button>
       </div>
       {t && (
-        <div className="grid gap-3 md:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           {[['Usual routine', litres(t.habit_l)], ['Milh plan', litres(t.planned_l)], ['Confirmed done', t.actual_l == null ? '—' : litres(t.actual_l)],
-            ['Water saved', litres(t.saved_l)]].map(([k, v]) => (
+            ['Water saved', litres(t.saved_l)], ['Well water kept', litres(t.aquifer_saved_l ?? 0)]].map(([k, v]) => (
             <div key={k} className="rounded-3xl bg-panel p-5 ring-1 ring-line"><div className="text-sm text-ink-soft">{k}</div><div className="num mt-1 text-3xl font-black">{v}</div></div>
           ))}
         </div>

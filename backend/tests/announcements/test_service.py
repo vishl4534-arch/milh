@@ -1,5 +1,6 @@
 import uuid
 from datetime import UTC, date, datetime
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import select
 
@@ -39,6 +40,29 @@ def test_rebuild_day_cancels_unplayed_only(session) -> None:
     assert all(statuses[a.id] == "scheduled" for a in second)
     start = next(a for a in second if a.type == "irrigation_start")
     assert "blue tap" in start.text["en"] and "نیلا نل" in start.text["ur"]
+
+
+def test_rebuild_day_cancels_run_that_spilled_past_midnight(session) -> None:
+    owner = make_user(session)
+    farm = make_farm(session, owner)
+    well, _d, block, _t = make_config(session, farm, today=DAY)
+    p = _plan(session, farm, block, well)
+    # A long run that ended after midnight: its stop announcement is dated the next day.
+    p.end_at = datetime(2026, 11, 16, 21, 30, tzinfo=UTC)
+    p.minutes = 1227
+    p.steps = [{"source_id": str(well.id), "minutes": 1227}]
+    first = rebuild_day(session, farm.id, DAY, NOW)
+    tz = ZoneInfo(farm.timezone)
+    def local_day(a: Announcement) -> date:
+        return a.scheduled_at.replace(tzinfo=a.scheduled_at.tzinfo or UTC).astimezone(tz).date()
+
+    late = [a for a in first if a.plan_id == p.id and local_day(a) > DAY]
+    assert late, "the long run should have an announcement after midnight"
+    p.end_at, p.minutes, p.steps = datetime(2026, 11, 16, 1, 47, tzinfo=UTC), 44, [{"source_id": str(well.id),
+                                                                                     "minutes": 44}]
+    rebuild_day(session, farm.id, DAY, NOW)
+    statuses = {a.id: a.status for a in session.scalars(select(Announcement))}
+    assert all(statuses[a.id] == "cancelled" for a in late)
 
 
 def test_irrigation_event_idempotent_and_acknowledges(client, session) -> None:

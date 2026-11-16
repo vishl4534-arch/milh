@@ -14,7 +14,16 @@ import { ReadingEntry } from './ReadingEntry'
 import { assistantStatus } from './voice/api'
 import { VoiceMode } from './voice/VoiceMode'
 import { MilhLogo, MilhMark } from '../brand/Logo'
-import { SkyScene } from './scene/SkyScene'
+
+function StartFact({ label, value, sub }: { label: string; value: string; sub: string }) {
+  return (
+    <span className="block px-5 py-4">
+      <span className="block text-xs font-medium uppercase tracking-[0.08em] text-white/45">{label}</span>
+      <span className="num mt-1 block text-3xl font-semibold">{value}</span>
+      {sub && <span className="block text-sm text-white/50">{sub}</span>}
+    </span>
+  )
+}
 
 export function KioskApp({ farmId }: { farmId?: string }) {
   const { t, i18n } = useTranslation()
@@ -126,26 +135,30 @@ export function KioskApp({ farmId }: { farmId?: string }) {
   }
 
   if (!unlocked) {
-    // The first tap of the day (it also lets the browser play sound): the sun comes up over the farm.
-    const sun = data.bundle.sun
+    // The first tap of the day (it also lets the browser play sound).
+    const b = data.bundle
+    const tz = b.farm.timezone
+    const runs = b.runs.filter((r) => r.steps.length > 0)
+    const clock = new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(now))
+    const date = new Intl.DateTimeFormat('en-GB', { timeZone: tz, weekday: 'long', day: 'numeric', month: 'long' }).format(new Date(now))
     return (
-      <button type="button" onClick={() => { player.unlock(); setUnlocked(true) }} className="block min-h-dvh w-full p-3 text-ink">
-        <SkyScene tall now={now} tz={data.bundle.farm.timezone}
-          sunrise={sun?.sunrise ? Date.parse(sun.sunrise) : null} sunset={sun?.sunset ? Date.parse(sun.sunset) : null}>
-          <span className="flex min-h-[calc(100dvh-1.5rem)] flex-col items-center justify-center gap-5 px-6 pb-24 text-center">
-            <span className="sun-rise relative grid size-44 place-items-center">
-              <span aria-hidden className="ring absolute inset-0 rounded-full bg-sun" />
-              <span className="relative grid size-44 place-items-center rounded-full bg-sun text-7xl text-ink shadow-[0_20px_50px_-15px_rgba(183,121,31,.9)]">
-                <Speaker />
-              </span>
-            </span>
-            <span className="rise-in rounded-3xl bg-white/90 px-8 py-4 shadow-lg" style={{ animationDelay: '500ms' }}>
-              <MilhLogo className="mx-auto mb-2 h-10 w-auto" />
-              <span className="block font-display text-4xl font-bold">{t('kiosk.tapToStart')}</span>
-              <span className="mt-1 block text-lg text-ink-soft">{data.bundle.farm.name} · {t('kiosk.tapToStartHint')}</span>
-            </span>
+      <button type="button" onClick={() => { player.unlock(); setUnlocked(true) }}
+        className="kiosk-start group relative flex min-h-dvh w-full flex-col items-center justify-center overflow-hidden px-6 text-center text-white">
+        <span aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_50%_at_50%_0%,rgb(14_107_75/0.35),transparent_70%)]" />
+        <span className="relative flex w-full max-w-xl flex-col items-center">
+          <MilhLogo color="#ffffff" className="fade-in h-9 w-auto" />
+          <span className="num mt-12 text-[clamp(4.5rem,13vw,8rem)] font-semibold leading-none tracking-tight">{clock}</span>
+          <span className="mt-3 text-lg text-white/60">{date} · {b.farm.name}</span>
+          <span className="mt-10 grid w-full grid-cols-3 divide-x divide-white/10 overflow-hidden rounded-xl border border-white/10 bg-white/[0.04] text-start">
+            <StartFact label={t('kiosk.today')} value={`${runs.length}`} sub={t('kiosk.blocksToWater', { defaultValue: 'blocks to water' })} />
+            <StartFact label={t('kiosk.water')} value={`${runs.reduce((a, r) => a + r.minutes, 0)}`} sub={t('common.minutes')} />
+            <StartFact label={t('kiosk.sunrise')} value={b.sun?.sunrise ? new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(b.sun.sunrise)) : '—'} sub="" />
           </span>
-        </SkyScene>
+          <span className="mt-10 inline-flex h-16 items-center gap-3 rounded-xl bg-white px-8 text-xl font-semibold text-[#0e1311] shadow-[0_10px_40px_-10px_rgb(14_107_75/0.7)] transition-transform group-active:scale-[0.98]">
+            <Speaker className="text-2xl text-[var(--k-green,#0e6b4b)]" /> {t('kiosk.tapToStart')}
+          </span>
+          <span className="mt-4 text-[0.9375rem] text-white/50">{t('kiosk.tapToStartHint')}</span>
+        </span>
       </button>
     )
   }

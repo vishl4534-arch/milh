@@ -39,6 +39,13 @@ cp ../.env.example .env                       # then fill in JWT_SECRET (32+ cha
 .venv/Scripts/python -m milh.cli create-device --farm <FARM_ID> --kind kiosk --name "Farm tablet"
 ```
 
+Optional, with the API running: load the cited published data and build today's plan in one step.
+Today's water EC values it adds are labelled demo stand-ins; replace them with a meter reading on stage.
+
+```bash
+.venv/Scripts/python scripts/demo_load.py --email you@example.com --password <password>
+```
+
 Then run three processes:
 
 ```bash
@@ -144,6 +151,16 @@ cd web && npx vitest run && npx tsc -b && npm run lint
 
 - Crop water need: FAO-56 (Allen et al. 1998), with ET₀ from Open-Meteo (FAO Penman-Monteith).
 - Salt leaching and yield response: FAO-29 (Ayers & Westcot 1985), LR = ECw / (5·ECe_t − ECw) and Maas-Hoffman.
+- Habit vs Milh yield: each option's root-zone salt comes from its *own* leaching fraction (water applied vs. crop
+  use), using the same FAO-29 equation solved for ECe: ECe = ECw·(1 + LF) / (5·LF). An over-watering habit leaches
+  hard and loses little yield (it wastes water instead); an under-watering habit builds salt.
+- "Well water kept in the ground": litres the habit pumps from well sources minus what the plan pumps. On a
+  salinising coastal aquifer this is the headline saving; desalinated water costs more per m³, and the dashboard
+  shows that cost honestly.
+- A salt flush is added once (depth ÷ application efficiency), not inflated by the leaching requirement again.
+  Soil tests older than `stale_soil_days` (default 60) no longer trigger a flush.
+- The salt clock never fits one line from an old survey into today's readings: it uses the recent run once it has
+  4+ readings, otherwise the older history, labelled as of its last reading.
 - EC 1:5 → ECe: Slavich & Petterson (1993) texture multipliers.
 - Soil texture: ISRIC SoilGrids.
 - Published salinity data in `data/published/`: well salinity for Al-Batinah, Oman (Al-Rahbi et al. 2019) and
