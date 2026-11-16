@@ -30,7 +30,7 @@ export function NumberPad({ value, onChange, max, decimals = 2 }: Props) {
           aria-label={k}
           onClick={() => press(k)}
           disabled={k === '.' && decimals === 0}
-          className="press num h-16 rounded-xl border border-line bg-white/6 text-3xl font-semibold shadow-[0_2px_0_rgba(255,255,255,.08)] active:bg-white/12 disabled:opacity-30"
+          className="press num h-16 rounded-xl border border-line bg-panel text-3xl font-semibold shadow-[0_2px_0_#d9ded9] active:bg-salt disabled:opacity-30"
         >
           {k}
         </button>

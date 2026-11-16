@@ -56,22 +56,7 @@
     "greet_morning": "Good morning",
     "greet_afternoon": "Good afternoon",
     "greet_evening": "Good evening",
-    "greet_night": "Good night",
-    "weather": "Weather",
-    "maxTemp": "max {{n}}°",
-    "illustration": "Picture of a farm like yours",
-    "home": "Today",
-    "tasks": "Today's watering",
-    "doneOf": "{{done}} of {{total}} done",
-    "ofDone": "of {{total}} done",
-    "minutesToday": "Watering today",
-    "savedToday": "Water saved",
-    "vsUsual": "compared with the usual routine",
-    "prevBlock": "Previous block",
-    "nextBlock": "Next block",
-    "saltLimit": "limit {{n}}",
-    "waterSalt": "Water salt",
-    "noAnnouncements": "No more announcements today"
+    "greet_night": "Good night"
   },
   "empty": {
     "noReading": "No reading yet",

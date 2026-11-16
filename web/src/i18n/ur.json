@@ -56,22 +56,7 @@
     "greet_morning": "صبح بخیر",
     "greet_afternoon": "سہ پہر بخیر",
     "greet_evening": "شام بخیر",
-    "greet_night": "شب بخیر",
-    "weather": "موسم",
-    "maxTemp": "زیادہ سے زیادہ {{n}}°",
-    "illustration": "آپ جیسے کھیت کی تصویر",
-    "home": "آج",
-    "tasks": "آج کی آبپاشی",
-    "doneOf": "{{total}} میں سے {{done}} مکمل",
-    "ofDone": "/ {{total}} مکمل",
-    "minutesToday": "آج پانی کا وقت",
-    "savedToday": "بچایا گیا پانی",
-    "vsUsual": "معمول کے مقابلے میں",
-    "prevBlock": "پچھلا بلاک",
-    "nextBlock": "اگلا بلاک",
-    "saltLimit": "حد {{n}}",
-    "waterSalt": "پانی کا نمک",
-    "noAnnouncements": "آج مزید کوئی اعلان نہیں"
+    "greet_night": "شب بخیر"
   },
   "empty": {
     "noReading": "ابھی کوئی ریڈنگ نہیں",

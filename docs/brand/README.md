@@ -21,10 +21,3 @@
 ## Sign-in art
 
 The tablet sign-in shows `web/public/login-art.webp` on the left and the owner sign-in shows `web/public/login-art-owner.webp` (falling back to the shared picture until it exists) (portrait, about 2:3, at least 1400 × 2100). Until that file exists, the animated farm sky is shown instead. Keep the lower 40% of the picture dark and calm: the headline sits there. The prompts used to make it are in the project chat; the brief is "flowing desert-dune ribbons turning into water, in sand, gold, palm green and water blue, on deep green-black".
-
-## Farm screens ("earth" look)
-
-The worker tablet and the owner screens use dark glass cards over the farm (inspired by the "Earthly" smart-farming dashboard concept on Dribbble). Pictures in `web/public/scenes/`, made with Higgsfield (GPT Image 2.6, 2 credits) and compressed for the web:
-- `farm-aerial.webp`: an aerial picture of a date farm like the example farm, used behind the block card. It is a picture, not a map: it is labelled "Picture of a farm like yours" and no block is placed on it.
-- `farm-hero.webp`: sunrise over a date palm, behind the tablet's start screen.
-- `farm-bg.webp`: the aerial picture, shrunk and pre-blurred, behind every farm screen (a few KB, so tablets do not blur live).
