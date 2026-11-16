@@ -32,3 +32,20 @@ test('without a microphone it says so and still offers typing', async () => {
   expect(await screen.findByText(/microphone is off/i)).toBeInTheDocument()
   expect(screen.getByPlaceholderText('Type a question')).toBeInTheDocument()
 })
+
+test('tick and cross are disabled while the answer is on its way', async () => {
+  vi.spyOn(api, 'fetchLines').mockResolvedValue({})
+  let release: (r: api.AssistantReply) => void = () => {}
+  vi.spyOn(api, 'askText')
+    .mockResolvedValueOnce({ ok: true, transcript: 'block 3 done', reply: 'Block 3: mark as done?', audio_url: null,
+      pending, context: { pending }, resume: false })
+    .mockImplementationOnce(() => new Promise((res) => { release = res }))
+  render(<VoiceMode lang="en" onClose={vi.fn()} />)
+  fireEvent.change(await screen.findByPlaceholderText('Type a question'), { target: { value: 'block 3 done' } })
+  fireEvent.submit(screen.getByRole('form', { name: 'Ask' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Yes' }))
+  expect(screen.getByRole('button', { name: 'Yes' })).toBeDisabled()
+  expect(screen.getByRole('button', { name: 'No' })).toBeDisabled()
+  release({ ok: true, transcript: 'yes', reply: 'Done.', audio_url: null, pending: null, context: {}, resume: false })
+  await waitFor(() => expect(screen.queryByRole('button', { name: 'Yes' })).toBeNull())
+})

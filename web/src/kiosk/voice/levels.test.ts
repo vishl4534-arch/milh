@@ -47,3 +47,11 @@ test('noise while the tablet speaks does not barge in', () => {
   feed(d, 0.005, 2000)
   expect(feed(d, 0.02, 3000, 'speaking')).toEqual([])
 })
+
+test('steady loud noise cannot keep a question open forever', () => {
+  const d = createDetector()
+  feed(d, 0.005, 2000)
+  const events = feed(d, 0.2, 16000)
+  expect(events).toContain('speech_start')
+  expect(events).toContain('speech_end')
+})

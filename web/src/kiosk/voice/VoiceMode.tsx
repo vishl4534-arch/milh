@@ -8,8 +8,9 @@ import { Check, Cross, Speaker } from '../../components/icons'
 import { askAudio, askText, fetchLines, type AssistantReply, type Line, type Turn } from './api'
 import { createDetector } from './levels'
 
-type State = 'starting' | 'listening' | 'thinking' | 'speaking' | 'muted' | 'nomic'
+type State = 'starting' | 'listening' | 'thinking' | 'speaking' | 'nomic'
 const WAIT_MS = 1500
+const LEVEL_EVERY_MS = 80 // the orb is redrawn at most this often
 const hasMic = () => typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia
 
 interface Props {
@@ -23,11 +24,17 @@ interface Exchange {
   reply: string
 }
 
+interface Recording {
+  rec: MediaRecorder
+  parts: Blob[] // each recording keeps its own pieces, so a late piece never leaks into the next question
+}
+
 export function VoiceMode({ lang, farmId, onClose }: Props) {
   const { t } = useTranslation()
   const [state, setState] = useState<State>(() => (hasMic() ? 'starting' : 'nomic'))
   const [log, setLog] = useState<Exchange[]>([])
   const [pending, setPending] = useState<Record<string, string> | null>(null)
+  const [busy, setBusy] = useState(false)
   const [typed, setTyped] = useState('')
   const [level, setLevel] = useState(0)
 
@@ -35,130 +42,169 @@ export function VoiceMode({ lang, farmId, onClose }: Props) {
   const history = useRef<Turn[]>([])
   const lines = useRef<Record<string, Line>>({})
   const stream = useRef<MediaStream | null>(null)
-  const audioCtx = useRef<AudioContext | null>(null)
   const analyser = useRef<AnalyserNode | null>(null)
-  const recorder = useRef<MediaRecorder | null>(null)
-  const chunks = useRef<Blob[]>([])
-  const playing = useRef<HTMLAudioElement | null>(null)
-  const saying = useRef('')
+  const recording = useRef<Recording | null>(null)
+  const answerAudio = useRef<HTMLAudioElement | null>(null)
+  const fillerAudio = useRef<HTMLAudioElement | null>(null)
+  const saying = useRef('') // the answer being read aloud, sent with a recording that talked over it
+  const interrupted = useRef('')
   const detector = useRef(createDetector())
-  const stateRef = useRef<State>(hasMic() ? 'starting' : 'nomic')
-  const alive = useRef(true)
-  const raf = useRef(0)
+  const stateRef = useRef<State>(state)
+  const busyRef = useRef(false)
+  const open = useRef(true)
+  const waitTimer = useRef(0)
 
   const set = (s: State) => {
     stateRef.current = s
     setState(s)
   }
 
-  const play = useCallback((url: string | null | undefined, text: string, after?: () => void) => {
-    playing.current?.pause()
-    if (!url) {
-      after?.()
-      return
+  const stopRecording = () => {
+    const r = recording.current
+    recording.current = null
+    if (r && r.rec.state !== 'inactive') {
+      r.rec.onstop = null
+      r.rec.stop()
     }
+  }
+
+  /** Short fixed lines ("Okay.", "One moment.") play over whatever is happening and never change the state. */
+  const playFiller = (url: string | null | undefined) => {
+    if (!url || !open.current) return
+    fillerAudio.current?.pause()
     const a = new Audio(url)
-    playing.current = a
-    saying.current = text
-    set('speaking')
-    detector.current.reset()
-    a.onended = () => {
-      if (playing.current === a) playing.current = null
-      after?.()
-    }
-    a.onerror = () => after?.()
-    a.play().catch(() => after?.())
-  }, [])
+    fillerAudio.current = a
+    a.play().catch(() => undefined)
+  }
 
   const listen = useCallback(() => {
-    if (!alive.current || !stream.current || typeof MediaRecorder === 'undefined') {
-      if (alive.current && stateRef.current !== 'nomic') set(stream.current ? 'listening' : 'nomic')
+    if (!open.current) return
+    stopRecording()
+    if (!stream.current || typeof MediaRecorder === 'undefined') {
+      set(stream.current ? 'listening' : 'nomic')
       return
     }
-    if (stateRef.current === 'muted') return
     const type = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'].find((x) => MediaRecorder.isTypeSupported(x))
     const rec = new MediaRecorder(stream.current, type ? { mimeType: type } : {})
-    recorder.current = rec
-    chunks.current = []
+    const r: Recording = { rec, parts: [] }
+    rec.ondataavailable = (e) => { if (e.data.size) r.parts.push(e.data) }
+    recording.current = r
     detector.current.reset()
-    rec.ondataavailable = (e) => { if (e.data.size) chunks.current.push(e.data) }
     rec.start(250)
     set('listening')
   }, [])
 
-  const handle = useCallback((r: AssistantReply, heard: string) => {
-    if (!alive.current) return
-    if (r.resume) { listen(); return }
-    ctx.current = r.context ?? {}
-    setPending(r.pending ?? null)
-    if (heard || r.transcript) history.current.push({ role: 'user', content: r.transcript || heard })
-    history.current.push({ role: 'assistant', content: r.reply })
-    history.current = history.current.slice(-12)
-    setLog((l) => [...l.slice(-5), { heard: r.transcript || heard, reply: r.reply }])
-    play(r.audio_url, r.reply, listen)
-  }, [listen, play])
+  /** Read an answer aloud, then call `after` exactly once (on end, error or refusal). */
+  const speak = useCallback((url: string | null | undefined, text: string, after: () => void) => {
+    let done = false
+    const finish = () => {
+      if (done) return
+      done = true
+      if (answerAudio.current === a) answerAudio.current = null
+      if (open.current) after()
+    }
+    answerAudio.current?.pause()
+    if (!url || !open.current) {
+      after()
+      return
+    }
+    stopRecording()
+    const a = new Audio(url)
+    answerAudio.current = a
+    saying.current = text
+    detector.current.reset()
+    set('speaking')
+    a.onended = finish
+    a.onerror = finish
+    a.play().catch(finish)
+  }, [])
 
   const ask = useCallback(async (input: { text?: string; blob?: Blob; interrupted?: string }) => {
+    if (busyRef.current || !open.current) return
+    busyRef.current = true
+    setBusy(true)
+    stopRecording()
     set('thinking')
-    const waiting = window.setTimeout(() => play(lines.current.wait?.audio_url, ''), WAIT_MS)
+    waitTimer.current = window.setTimeout(() => playFiller(lines.current.wait?.audio_url), WAIT_MS)
+    let r: AssistantReply | null = null
+    let failure = ''
     try {
-      const r = input.blob
+      r = input.blob
         ? await askAudio(input.blob, { lang, history: history.current, context: ctx.current, interrupted: input.interrupted, farmId })
         : await askText({ question: input.text ?? '', lang, history: history.current, context: ctx.current, farm_id: farmId })
-      window.clearTimeout(waiting)
-      handle(r, input.text ?? '')
     } catch (err) {
-      window.clearTimeout(waiting)
-      if (!alive.current) return
-      setLog((l) => [...l, { heard: input.text ?? '', reply: err instanceof Error ? err.message : String(err) }])
+      failure = err instanceof Error ? err.message : String(err)
+    }
+    window.clearTimeout(waitTimer.current)
+    busyRef.current = false
+    setBusy(false)
+    if (!open.current) return
+    if (!r) {
+      setLog((l) => [...l.slice(-5), { heard: input.text ?? '', reply: failure }])
       listen()
+      return
     }
-  }, [farmId, handle, lang, listen, play])
+    if (r.resume) { listen(); return }
+    const heard = r.transcript || input.text || ''
+    ctx.current = r.context ?? {}
+    setPending(r.pending ?? null)
+    if (heard) history.current.push({ role: 'user', content: heard })
+    history.current.push({ role: 'assistant', content: r.reply })
+    history.current = history.current.slice(-12)
+    setLog((l) => [...l.slice(-5), { heard, reply: r.reply }])
+    speak(r.audio_url, r.reply, listen)
+  }, [farmId, lang, listen, speak])
 
-  const finishRecording = useCallback((interrupted = '') => {
-    const rec = recorder.current
-    if (!rec || rec.state === 'inactive') return
-    recorder.current = null
-    rec.onstop = () => {
-      const blob = new Blob(chunks.current, { type: rec.mimeType || 'audio/webm' })
-      play(lines.current.ok?.audio_url, '')
-      void ask({ blob, interrupted })
+  const finishRecording = useCallback(() => {
+    const r = recording.current
+    if (!r || r.rec.state === 'inactive') return
+    recording.current = null
+    const over = interrupted.current
+    interrupted.current = ''
+    r.rec.onstop = () => {
+      const blob = new Blob(r.parts, { type: r.rec.mimeType || 'audio/webm' })
+      playFiller(lines.current.ok?.audio_url)
+      void ask({ blob, interrupted: over })
     }
-    rec.stop()
-  }, [ask, play])
+    r.rec.stop()
+  }, [ask])
 
   // Microphone, level meter and the frame loop.
   useEffect(() => {
-    alive.current = true
-    const AC = (window as unknown as { AudioContext?: typeof AudioContext }).AudioContext
+    open.current = true
+    let cancelled = false
+    let ac: AudioContext | null = null
+    let raf = 0
     void fetchLines(lang, farmId).then((l) => { lines.current = l }).catch(() => undefined)
-    if (!hasMic()) return () => { alive.current = false }
-    navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 } })
-      .then((s) => {
-        if (!alive.current) { s.getTracks().forEach((tr) => tr.stop()); return }
-        stream.current = s
-        if (AC) {
-          const ac = new AC()
-          audioCtx.current = ac
-          const src = ac.createMediaStreamSource(s)
-          const band = ac.createBiquadFilter() // the voice band only
-          band.type = 'bandpass'
-          band.frequency.value = 1000
-          band.Q.value = 0.6
-          const an = ac.createAnalyser()
-          an.fftSize = 1024
-          src.connect(band)
-          band.connect(an)
-          analyser.current = an
-        }
-        const greeting = lines.current.greeting
-        if (greeting?.audio_url) play(greeting.audio_url, greeting.text, listen)
-        else listen()
-      })
-      .catch(() => set('nomic'))
+    if (hasMic()) {
+      navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 } })
+        .then((s) => {
+          if (cancelled) { s.getTracks().forEach((tr) => tr.stop()); return }
+          stream.current = s
+          const AC = (window as unknown as { AudioContext?: typeof AudioContext }).AudioContext
+          if (AC) {
+            ac = new AC()
+            const src = ac.createMediaStreamSource(s)
+            const band = ac.createBiquadFilter() // the voice band only
+            band.type = 'bandpass'
+            band.frequency.value = 1000
+            band.Q.value = 0.6
+            const an = ac.createAnalyser()
+            an.fftSize = 1024
+            src.connect(band)
+            band.connect(an)
+            analyser.current = an
+          }
+          const greeting = lines.current.greeting
+          speak(greeting?.audio_url, greeting?.text ?? '', listen)
+        })
+        .catch(() => { if (!cancelled) set('nomic') })
+    }
 
     const buf = new Float32Array(1024)
     let last = performance.now()
+    let lastDraw = 0
+    let smooth = 0
     const tick = (now: number) => {
       const dt = Math.min(100, now - last)
       last = now
@@ -169,52 +215,55 @@ export function VoiceMode({ lang, farmId, onClose }: Props) {
         for (let i = 0; i < buf.length; i++) sum += buf[i] * buf[i]
         const rms = Math.sqrt(sum / buf.length)
         const s = stateRef.current
-        if (s === 'listening' || s === 'speaking') {
+        if (!busyRef.current && (s === 'listening' || s === 'speaking')) {
           const ev = detector.current.step(rms, dt, s === 'speaking' ? 'speaking' : 'listening')
           if (ev === 'speech_end') finishRecording()
-          else if (ev === 'idle_restart') { recorder.current?.stop(); recorder.current = null; listen() }
-          else if (ev === 'barge' && playing.current) {
-            const interrupted = saying.current
-            playing.current.pause()
-            playing.current = null
+          else if (ev === 'idle_restart') listen()
+          else if (ev === 'barge' && answerAudio.current) {
+            interrupted.current = saying.current // the server checks whether this was only the tablet's own voice
+            const a = answerAudio.current
+            answerAudio.current = null
+            a.onended = null
+            a.onerror = null
+            a.pause()
             listen()
-            saying.current = interrupted
           }
         }
-        setLevel((p) => p * 0.6 + Math.min(1, rms * 6) * 0.4)
+        smooth = smooth * 0.6 + Math.min(1, rms * 6) * 0.4
+        if (now - lastDraw > LEVEL_EVERY_MS) {
+          lastDraw = now
+          setLevel(smooth)
+        }
       }
-      raf.current = requestAnimationFrame(tick)
+      raf = requestAnimationFrame(tick)
     }
-    raf.current = requestAnimationFrame(tick)
+    raf = requestAnimationFrame(tick)
     return () => {
-      alive.current = false
-      cancelAnimationFrame(raf.current)
-      playing.current?.pause()
-      recorder.current?.stop()
+      cancelled = true
+      open.current = false
+      cancelAnimationFrame(raf)
+      window.clearTimeout(waitTimer.current)
+      answerAudio.current?.pause()
+      fillerAudio.current?.pause()
+      stopRecording()
       stream.current?.getTracks().forEach((tr) => tr.stop())
-      void audioCtx.current?.close()
+      stream.current = null
+      analyser.current = null
+      void ac?.close()
     }
-  }, [farmId, finishRecording, lang, listen, play])
+  }, [farmId, finishRecording, lang, listen, speak])
 
   function submit(e: FormEvent) {
     e.preventDefault()
     const text = typed.trim()
-    if (!text) return
+    if (!text || busy) return
     setTyped('')
-    recorder.current?.stop()
-    recorder.current = null
     void ask({ text })
-  }
-
-  function answer(yes: boolean) {
-    recorder.current?.stop()
-    recorder.current = null
-    void ask({ text: yes ? 'yes' : 'no' })
   }
 
   const label: Record<State, string> = {
     starting: t('voice.starting'), listening: t('voice.listening'), thinking: t('voice.thinking'),
-    speaking: t('voice.speaking'), muted: t('voice.muted'), nomic: t('voice.micDenied'),
+    speaking: t('voice.speaking'), nomic: t('voice.micDenied'),
   }
   const last = log[log.length - 1]
 
@@ -239,17 +288,17 @@ export function VoiceMode({ lang, farmId, onClose }: Props) {
         )}
         {pending && (
           <div className="flex gap-4">
-            <button type="button" onClick={() => answer(true)} aria-label={t('voice.yes')}
-              className="grid h-20 w-32 place-items-center rounded-2xl bg-palm text-5xl"><Check /></button>
-            <button type="button" onClick={() => answer(false)} aria-label={t('voice.no')}
-              className="grid h-20 w-32 place-items-center rounded-2xl bg-brine text-5xl"><Cross /></button>
+            <button type="button" onClick={() => void ask({ text: 'yes' })} disabled={busy} aria-label={t('voice.yes')}
+              className="grid h-20 w-32 place-items-center rounded-2xl bg-palm text-5xl disabled:opacity-40"><Check /></button>
+            <button type="button" onClick={() => void ask({ text: 'no' })} disabled={busy} aria-label={t('voice.no')}
+              className="grid h-20 w-32 place-items-center rounded-2xl bg-brine text-5xl disabled:opacity-40"><Cross /></button>
           </div>
         )}
       </div>
       <form aria-label={t('kiosk.ask')} onSubmit={submit} className="flex w-full max-w-2xl gap-2">
         <input value={typed} onChange={(e) => setTyped(e.target.value)} placeholder={t('voice.type')}
           className="flex-1 rounded-xl bg-salt/10 px-4 py-3 text-lg text-salt placeholder:text-salt/50" />
-        <button className="rounded-xl bg-salt px-5 py-3 font-semibold text-ink">{t('kiosk.ask')}</button>
+        <button disabled={busy} className="rounded-xl bg-salt px-5 py-3 font-semibold text-ink disabled:opacity-40">{t('kiosk.ask')}</button>
       </form>
     </div>
   )

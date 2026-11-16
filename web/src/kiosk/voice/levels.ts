@@ -16,6 +16,7 @@ export const LEVELS = {
   BARGE_MS: 300, // talking over the tablet this long interrupts it
   BARGE_OVER: 2.2, // ...and must be this many times louder than ordinary speech detection
   BARGE_MIN: 0.03, // never interrupt for anything quieter than this
+  MAX_QUESTION_MS: 15000, // a question is never longer than this (a pump starting up must not hold it open)
 } as const
 
 export interface Detector {
@@ -32,6 +33,7 @@ export function createDetector(): Detector {
   let quietMs = 0
   let recMs = 0
   let bargeMs = 0
+  let questionMs = 0
   let heard = false
 
   const learn = (f: number, r: number) => f * 0.97 + Math.min(r, f * 2) * 0.03
@@ -45,6 +47,7 @@ export function createDetector(): Detector {
       quietMs = 0
       recMs = 0
       bargeMs = 0
+      questionMs = 0
       heard = false
     },
     step(r, dt, mode) {
@@ -62,6 +65,7 @@ export function createDetector(): Detector {
         return null
       }
       recMs += dt
+      if (heard) questionMs += dt
       const loud = r > Math.max(L.MIN_LEVEL, floor * L.OVER_ROOM)
       if (loud) {
         speechMs += dt
@@ -76,11 +80,22 @@ export function createDetector(): Detector {
         speechMs = Math.max(0, speechMs - dt * 2)
         floor = learn(floor, r)
       }
+      if (heard && questionMs >= L.MAX_QUESTION_MS) {
+        // Too long to be a question: treat this steady sound as the new room level and close the recording.
+        floor = Math.max(floor, r / L.OVER_ROOM)
+        heard = false
+        speechMs = 0
+        quietMs = 0
+        recMs = 0
+        questionMs = 0
+        return 'speech_end'
+      }
       if (heard && quietMs >= L.END_MS) {
         heard = false // ready for the next question
         speechMs = 0
         quietMs = 0
         recMs = 0
+        questionMs = 0
         return 'speech_end'
       }
       if (!heard && recMs > L.IDLE_RESTART_MS) {
