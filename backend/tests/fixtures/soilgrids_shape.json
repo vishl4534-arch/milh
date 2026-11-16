@@ -1,0 +1,29 @@
+{
+  "_note": "TEST-ONLY fixture written by hand in the documented SoilGrids v2.0 /properties/query response shape (the live API was unreachable when tests were written). Never loaded by the app.",
+  "type": "Feature",
+  "geometry": {"type": "Point", "coordinates": [55.7447, 24.2075]},
+  "properties": {
+    "layers": [
+      {"name": "clay", "unit_measure": {"d_factor": 10, "mapped_units": "g/kg", "target_units": "%"},
+       "depths": [
+         {"range": {"top_depth": 0, "bottom_depth": 5, "unit_depth": "cm"}, "label": "0-5cm", "values": {"mean": 50}},
+         {"range": {"top_depth": 5, "bottom_depth": 15, "unit_depth": "cm"}, "label": "5-15cm", "values": {"mean": 60}},
+         {"range": {"top_depth": 15, "bottom_depth": 30, "unit_depth": "cm"}, "label": "15-30cm", "values": {"mean": 70}}]},
+      {"name": "sand", "unit_measure": {"d_factor": 10, "mapped_units": "g/kg", "target_units": "%"},
+       "depths": [
+         {"range": {"top_depth": 0, "bottom_depth": 5, "unit_depth": "cm"}, "label": "0-5cm", "values": {"mean": 900}},
+         {"range": {"top_depth": 5, "bottom_depth": 15, "unit_depth": "cm"}, "label": "5-15cm", "values": {"mean": 880}},
+         {"range": {"top_depth": 15, "bottom_depth": 30, "unit_depth": "cm"}, "label": "15-30cm", "values": {"mean": 860}}]},
+      {"name": "silt", "unit_measure": {"d_factor": 10, "mapped_units": "g/kg", "target_units": "%"},
+       "depths": [
+         {"range": {"top_depth": 0, "bottom_depth": 5, "unit_depth": "cm"}, "label": "0-5cm", "values": {"mean": 50}},
+         {"range": {"top_depth": 5, "bottom_depth": 15, "unit_depth": "cm"}, "label": "5-15cm", "values": {"mean": 60}},
+         {"range": {"top_depth": 15, "bottom_depth": 30, "unit_depth": "cm"}, "label": "15-30cm", "values": {"mean": 70}}]},
+      {"name": "phh2o", "unit_measure": {"d_factor": 10, "mapped_units": "pH*10", "target_units": "-"},
+       "depths": [
+         {"range": {"top_depth": 0, "bottom_depth": 5, "unit_depth": "cm"}, "label": "0-5cm", "values": {"mean": 82}},
+         {"range": {"top_depth": 5, "bottom_depth": 15, "unit_depth": "cm"}, "label": "5-15cm", "values": {"mean": 81}},
+         {"range": {"top_depth": 15, "bottom_depth": 30, "unit_depth": "cm"}, "label": "15-30cm", "values": {"mean": 80}}]}
+    ]
+  }
+}

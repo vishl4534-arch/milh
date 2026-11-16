@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from milh.auth import Principal, current_principal, farm_for, owned_farm, require_role
 from milh.db import get_session
+from milh.models import SoilProfile
 from milh.sources.open_meteo import (
     SOURCE,
     WeatherUnavailable,
@@ -19,6 +20,7 @@ from milh.sources.open_meteo import (
     refresh_weather,
     snapshot_age_h,
 )
+from milh.sources.soilgrids import SoilUnavailable, refresh_soil_profile
 
 router = APIRouter(prefix="/api/v1", tags=["weather"])
 DB = Annotated[Session, Depends(get_session)]
@@ -75,3 +77,40 @@ def post_refresh(farm_id: uuid.UUID, p: Annotated[Principal, Depends(require_rol
     farm.needs_replan = True
     session.commit()
     return weather_out(session, farm.id, farm.timezone)
+
+
+class SoilProfileOut(BaseModel):
+    clay_pct: float
+    sand_pct: float
+    silt_pct: float
+    ph: float | None
+    texture_class: str
+    fetched_at: datetime
+    source: str
+
+
+def _profile_out(prof: SoilProfile | None) -> SoilProfileOut | None:
+    if prof is None:
+        return None
+    return SoilProfileOut(clay_pct=prof.clay_pct, sand_pct=prof.sand_pct, silt_pct=prof.silt_pct, ph=prof.ph,
+                          texture_class=prof.texture_class, fetched_at=prof.fetched_at, source=prof.source)
+
+
+@router.get("/farms/{farm_id}/soil-profile", response_model=SoilProfileOut | None)
+def get_soil_profile(farm_id: uuid.UUID, p: Annotated[Principal, Depends(current_principal)],
+                     session: DB) -> SoilProfileOut | None:
+    farm = farm_for(session, p, farm_id)
+    return _profile_out(session.get(SoilProfile, farm.id))
+
+
+@router.post("/farms/{farm_id}/soil-profile/refresh", response_model=SoilProfileOut | None)
+def refresh_profile(farm_id: uuid.UUID, p: Annotated[Principal, Depends(require_role("owner", "admin"))],
+                    session: DB) -> SoilProfileOut | None:
+    farm = owned_farm(session, p, farm_id)
+    try:
+        with http_client() as http:
+            prof = refresh_soil_profile(session, farm, http)
+    except SoilUnavailable as e:
+        raise HTTPException(503, f"SoilGrids unavailable: {e}") from e
+    session.commit()
+    return _profile_out(prof)
