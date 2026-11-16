@@ -108,4 +108,7 @@ cd web && npx vitest run && npx tsc -b && npm run lint
 - Salt leaching and yield response: FAO-29 (Ayers & Westcot 1985), LR = ECw / (5·ECe_t − ECw) and Maas-Hoffman.
 - EC 1:5 → ECe: Slavich & Petterson (1993) texture multipliers.
 - Soil texture: ISRIC SoilGrids.
+- Published salinity data in `data/published/`: well salinity for Al-Batinah, Oman (Al-Rahbi et al. 2019) and
+  farm soil salinity (Al-Busaidi et al. 2022). Citations and caveats are in
+  [data/published/SOURCES.md](data/published/SOURCES.md). The example farm is placed in the same area.
 - Crop table values in `data/crops.json` are marked **VERIFY**. Check them against the source tables before relying on them.

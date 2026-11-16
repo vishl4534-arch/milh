@@ -282,6 +282,9 @@ export interface SaltClock {
   date_loss_10: string | null
   date_loss_25: string | null
   suggested_crops: string[]
+  as_of: string | null
+  stale: boolean
+  data_age_days: number | null
   points: { day: string; ec: number; source: string; note: string | null }[]
 }
 

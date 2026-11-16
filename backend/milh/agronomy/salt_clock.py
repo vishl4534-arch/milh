@@ -32,6 +32,9 @@ class SaltClock:
     date_loss_10: date | None  # None if the trend never gets there (flat or falling)
     date_loss_25: date | None
     suggested_crops: list[str]
+    as_of: date | None = None  # the day the "current" values describe
+    stale: bool = False  # True when the newest reading is too old to describe today
+    data_age_days: int | None = None
 
 
 def _fit(xs: list[float], ys: list[float]) -> tuple[float, float, float]:
@@ -54,7 +57,12 @@ def salt_clock(
     horizon_days: int = 730,
     min_readings: int = 4,
     min_span_days: int = 21,
+    stale_after_days: int = 365,
 ) -> SaltClock:
+    """Trend of water salinity and what it means for the crop.
+
+    If the newest reading is older than `stale_after_days`, everything is reported as of that reading
+    instead of today: a trend is never stretched across years with no data."""
     pts = sorted(readings)
     n = len(pts)
     span = (pts[-1][0] - pts[0][0]).days if pts else 0
@@ -66,17 +74,21 @@ def salt_clock(
     ys = [ec for _, ec in pts]
     slope, intercept, sd = _fit(xs, ys)
 
-    t_today = float((today - d0).days)
+    last = pts[-1][0]
+    age = (today - last).days
+    stale = age > stale_after_days
+    ref = last if stale else today
+    t_today = float((ref - d0).days)
     current = intercept + slope * t_today
     current_yield = yield_pct(ECE_PER_ECW * current, crop.salt_a, crop.salt_b)
 
     def crossing(loss: float) -> date | None:
+        """When the trend line passes this yield loss: in the past (when it happened, never before the
+        first reading), or ahead. None when the water is not getting saltier and is still below the line."""
         target = (crop.salt_a + loss / crop.salt_b) / ECE_PER_ECW
-        if current >= target:
-            return today
-        if slope <= 0:
-            return None
-        return d0 + timedelta(days=round((target - intercept) / slope))
+        if slope > 0:
+            return max(d0, d0 + timedelta(days=round((target - intercept) / slope)))
+        return ref if current >= target else None
 
     horizon_ece = ECE_PER_ECW * (intercept + slope * (t_today + horizon_days))
     ranked = sorted(
@@ -89,5 +101,6 @@ def salt_clock(
     )
     suggested = [key for y, key in ranked if y >= 90.0]
     return SaltClock(
-        "ok", n, span, slope, sd, current, current_yield, crossing(10.0), crossing(25.0), suggested
+        "ok", n, span, slope, sd, current, current_yield, crossing(10.0), crossing(25.0), suggested,
+        as_of=ref, stale=stale, data_age_days=age,
     )

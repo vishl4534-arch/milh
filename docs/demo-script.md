@@ -1,12 +1,22 @@
 # Milh demo script (about 3 minutes)
 
-**Before the demo:** follow the README to set up the example farm. Fill `.env` with the ElevenLabs and
-Gemini keys. Import the cited published data from `data/published/` (Owner → Add data → Import, with
-"Published data" ticked). Then open the farm tablet once while online so it caches today's plan and audio.
-Record a backup video of the full run.
+**Before the demo:**
+1. Follow the README to set up the example farm. It sits on Oman's Al-Batinah coastal plain, the same
+   area as the cited salinity data.
+2. Fill `.env` with the ElevenLabs and Gemini keys.
+3. Import the cited published data (Owner → Add data → Import, with "Published data" ticked):
+   - `data/published/batinah_well_T52_water_ec.csv`: **one** well, 1991–2010. Don't import the 18-well
+     file into the single "Well" source, because it would mix wells into one line.
+   - `data/published/batinah_soil_tests.csv` (soil tests).
+4. **Give today's plan a current water reading.** The newest published value is from 2010. The app marks it
+   as old, but today's minutes should come from today's water. Enter a meter reading on stage, or a recent
+   cited value, as the newest Well reading.
+5. Open the farm tablet once while online so it caches today's plan and audio.
+6. Record a backup video of the full run.
 
-Say this out loud: **the farm layout is an example setup. Weather is live, and every reading is cited
-published data or entered on stage.**
+Say this out loud: **the farm layout is an example setup on Oman's Batinah coast. Weather is live for that
+spot, the well history is from a peer-reviewed study of Batinah monitoring wells, and today's reading is
+entered on stage.**
 
 ## 1. Why this angle (1 minute)
 
@@ -14,7 +24,8 @@ published data or entered on stage.**
 > so growers pour on extra water "just in case". Nobody tells them how much is enough. Second, the
 > person who decides is not the person at the valve: the owner's habit reaches the worker once, as
 > "60 minutes, every day", and is never updated. Third, salinity is noticed after the harvest fails.
-> Milh fixes all three.
+> On the Batinah coast, one monitoring well went from 2.5 to 15.4 dS/m between 1991 and 2010, as seawater
+> pushed inland. Milh fixes all three.
 
 ## 2. Live farm (20 s)
 
@@ -42,8 +53,9 @@ published data or entered on stage.**
 ## 6. Soil schedule and salt clock (20 s)
 
 - The soil panel shows the next test in 7 days because salt is rising (or 14 days when stable).
-- Owner → Salt clock: the trend and the date yield loss passes 10% and 25%, with crops that still fit.
-  If no cited time series exists, it honestly shows "Collecting readings (n/4)". Say so.
+- Owner → Salt clock (Well): the 1991–2010 history, clearly labelled as old data and **not today**.
+  Show when date-palm yield would have crossed 10% and 25% loss, and which crops still fit that water.
+  This is the warning a grower never got. With current readings, the same view becomes the forward warning.
 
 ## 7. Offline (10 s)
 

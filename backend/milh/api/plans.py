@@ -75,6 +75,9 @@ class SaltClockOut(BaseModel):
     date_loss_10: date | None
     date_loss_25: date | None
     suggested_crops: list[str]
+    as_of: date | None
+    stale: bool
+    data_age_days: int | None
     points: list[SaltPoint]
 
 
@@ -142,7 +145,8 @@ def get_salt_clock(farm_id: uuid.UUID, source_id: uuid.UUID, p: Annotated[Princi
         source_id=source_id, crop_key=crop_row.key, status=c.status, n_readings=c.n_readings, span_days=c.span_days,
         slope_per_year=c.slope_per_day * 365 if c.slope_per_day is not None else None, residual_sd=c.residual_sd,
         current_ecw=c.current_ecw, current_yield_pct=c.current_yield_pct, date_loss_10=c.date_loss_10,
-        date_loss_25=c.date_loss_25, suggested_crops=c.suggested_crops,
+        date_loss_25=c.date_loss_25, suggested_crops=c.suggested_crops, as_of=c.as_of, stale=c.stale,
+        data_age_days=c.data_age_days,
         points=[SaltPoint(day=r.measured_at.astimezone(tz).date(), ec=r.value, source=r.source, note=r.note)
                 for r in readings],
     )

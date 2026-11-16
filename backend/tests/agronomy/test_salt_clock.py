@@ -37,9 +37,34 @@ def test_falling_salinity_never_crosses() -> None:
     assert c.date_loss_25 is None
 
 
-def test_already_crossed_returns_today() -> None:
+def test_already_crossed_before_first_reading_returns_first_reading() -> None:
+    # Tomato loses 10 % already at the first reading's salt: the line was crossed no later than that day.
     c = salt_clock(READ, TOMATO, LIB, D0 + timedelta(90))
-    assert c.date_loss_10 == D0 + timedelta(90)
+    assert c.date_loss_10 == D0
+
+
+def test_recent_series_is_as_of_today() -> None:
+    c = salt_clock(READ, DATE_PALM, LIB, today=D0 + timedelta(90))
+    assert c.stale is False and c.as_of == D0 + timedelta(90)
+
+
+def test_old_series_is_anchored_at_last_reading_not_extrapolated_to_today() -> None:
+    # Readings end in 2026-04; asking in 2042 must not project 16 years beyond the data.
+    c = salt_clock(READ, DATE_PALM, LIB, today=date(2042, 4, 1))
+    assert c.stale is True
+    assert c.as_of == D0 + timedelta(90)          # the last reading
+    assert c.data_age_days == (date(2042, 4, 1) - (D0 + timedelta(90))).days
+    assert c.current_ecw == pytest.approx(3.3)    # value at the last reading, not 2042
+    assert c.current_yield_pct == pytest.approx(96.58, abs=0.01)
+    assert c.suggested_crops == ["barley"]        # horizon counted from the last reading
+
+
+def test_crossing_inside_the_series_reports_when_it_happened() -> None:
+    # Yearly series rising 1 dS/m per year from 3.0: date palm 10 % loss (ECw 4.52) is crossed ~1.5 years in.
+    yearly = [(date(2000 + i, 7, 1), 3.0 + i) for i in range(5)]
+    c = salt_clock(yearly, DATE_PALM, LIB, today=date(2026, 11, 16))
+    assert c.stale and c.date_loss_10 is not None
+    assert date(2001, 12, 1) <= c.date_loss_10 <= date(2002, 2, 1)
 
 
 def test_yield_clamped() -> None:

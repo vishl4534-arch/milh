@@ -18,6 +18,7 @@ from milh.models import Block, Farm, Reading, Tank, WaterSource
 from milh.schemas.readings import ReadingIn
 
 FUTURE_TOLERANCE = timedelta(minutes=10)
+LIVE_ALERT_WINDOW = timedelta(days=7)
 REPLAN_METRICS = {"water_ec", "soil_ec_1to5", "soil_ece", "soil_ph", "soil_moisture_vwc"}
 
 
@@ -72,8 +73,11 @@ def validate(session: Session, r: ReadingIn, prov: Provenance, now: datetime) ->
     return normalise(r)
 
 
-def _side_effects(session: Session, farm: Farm, reading: Reading) -> None:
+def _side_effects(session: Session, farm: Farm, reading: Reading, now: datetime) -> None:
     s = get_farm_settings(farm)
+    # Alerts are about today: importing history (a 1991-2010 well series, an old lab report) must not
+    # raise or clear live alarms. The reading itself is still stored and flagged.
+    live = reading.measured_at >= now - LIVE_ALERT_WINDOW
     if reading.metric in REPLAN_METRICS:
         farm.needs_replan = True
     if reading.metric == "water_ec" and reading.source_id is not None:
@@ -87,9 +91,12 @@ def _side_effects(session: Session, farm: Farm, reading: Reading) -> None:
         if prev is not None and prev.value > 0 and abs(reading.value - prev.value) / prev.value > s.ec_jump_ratio:
             reading.flags = [*reading.flags, "jump"]
             src = session.get(WaterSource, reading.source_id)
-            alerts.raise_alert(session, farm.id, "water_ec_jump", "warning",
-                               {"source": src.name if src else "", "old": round(prev.value, 2),
-                                "new": round(reading.value, 2)}, subject=str(reading.source_id))
+            if live:
+                alerts.raise_alert(session, farm.id, "water_ec_jump", "warning",
+                                   {"source": src.name if src else "", "old": round(prev.value, 2),
+                                    "new": round(reading.value, 2)}, subject=str(reading.source_id))
+    if not live:
+        return
     if reading.tank_id is not None:
         alerts.resolve_alerts(session, farm.id, "data_stale", f"tank:{reading.tank_id}")
     if reading.submitted_by_device_id is not None:
@@ -133,7 +140,7 @@ def ingest(
         session.flush()
         farm = session.get(Farm, r.farm_id)
         assert farm is not None
-        _side_effects(session, farm, reading)
+        _side_effects(session, farm, reading, now)
         session.flush()
         results.append(IngestResult(reading.id, "created", flags=list(reading.flags)))
     return results

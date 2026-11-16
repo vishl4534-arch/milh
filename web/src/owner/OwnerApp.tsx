@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useState, type FormEvent } from 'react'
-import { Link, Navigate, NavLink, Route, Routes, useNavigate, useParams } from 'react-router-dom'
+import { Link, Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom'
 import { api, setToken } from '../api/client'
 import { useAlerts, useFarm, useFarms, usePlans, useSources } from '../api/hooks'
 import type { Farm } from '../api/types'
@@ -10,6 +10,7 @@ import { PlanDetail } from './PlanDetail'
 import { ReportsTab } from './ReportsTab'
 import { SaltClockTab } from './SaltClockTab'
 import { SetupTab } from './SetupTab'
+import { TabNav } from './TabNav'
 
 export function OwnerApp() {
   return (
@@ -79,10 +80,6 @@ function NewFarm() {
   )
 }
 
-const TABS = [
-  ['', 'Today'], ['data', 'Add data'], ['salt', 'Salt clock'], ['reports', 'Water report'], ['alerts', 'Alerts'], ['setup', 'Setup'],
-] as const
-
 function FarmDashboard() {
   const { farmId = '' } = useParams()
   const farm = useFarm(farmId)
@@ -105,14 +102,7 @@ function FarmDashboard() {
             <button onClick={signOut} className="rounded-xl px-3 py-2 ring-1 ring-line">Sign out</button>
           </div>
         </div>
-        <nav className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-4">
-          {TABS.map(([path, label]) => (
-            <NavLink key={path} end={path === ''} to={path}
-              className={({ isActive }) => `whitespace-nowrap border-b-2 px-3 py-2 ${isActive ? 'border-ink font-semibold' : 'border-transparent text-ink-soft'}`}>
-              {label}{path === 'alerts' && alerts.data?.length ? <span className="num ms-1.5 rounded-full bg-brine px-1.5 text-xs text-white">{alerts.data.length}</span> : null}
-            </NavLink>
-          ))}
-        </nav>
+        <TabNav farmId={f.id} alerts={alerts.data?.length ?? 0} />
       </header>
       <main className="mx-auto max-w-6xl p-4">
         <Routes>

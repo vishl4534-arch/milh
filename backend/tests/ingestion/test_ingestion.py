@@ -102,3 +102,16 @@ def test_ingest_sets_needs_replan(session, farm_setup) -> None:
     farm.needs_replan = False
     ingest(session, [_r(farm.id, source_id=well.id)], Provenance("manual", owner.id, None), now=NOW)
     assert farm.needs_replan is True
+
+
+def test_historical_import_raises_no_live_alerts(session, farm_setup) -> None:
+    owner, farm, well, _desal, _block, tank = farm_setup
+    old = NOW - timedelta(days=365 * 10)
+    prov = Provenance("csv_import", owner.id, None)
+    ingest(session, [_r(farm.id, source_id=well.id, value=2.5, measured_at=old)], prov, now=NOW)
+    res = ingest(session, [_r(farm.id, source_id=well.id, value=3.5, measured_at=old + timedelta(days=700))],
+                 prov, now=NOW)
+    ingest(session, [_r(farm.id, metric="tank_level_pct", value=10, unit="%", tank_id=tank.id, measured_at=old)],
+           prov, now=NOW)
+    assert res[0].flags == ["jump"]
+    assert session.scalars(select(Alert)).all() == []
