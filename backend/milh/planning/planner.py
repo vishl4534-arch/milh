@@ -13,6 +13,7 @@ from milh import alerts
 from milh.agronomy.blend import SourceOption
 from milh.agronomy.crops import crop_from_row
 from milh.agronomy.timing import BlockRun, schedule_runs
+from milh.ai import gemini as gemini_mod
 from milh.announcements.templates import localized
 from milh.farm_config import get_farm_settings
 from milh.models import Block, Crop, Farm, IrrigationPlan, Reading, SoilTest, WaterSource
@@ -110,9 +111,16 @@ def plan_farm_day(session: Session, farm_id: uuid.UUID, day: date, now: datetime
         assert crop_row is not None
         run = by_block.get(str(b.id))
         text: dict[str, str] = {}
+        text_source: dict[str, str] = {}
+        gem = gemini_mod.get_gemini()
         for lang in s.languages:
             names = {str(sid): localized(ws.tap_label, lang) or ws.name for sid, ws in sources.items()}
             text[lang] = render_explanation(bp, localized(crop_row.names, lang), names, lang)
+            text_source[lang] = "template"
+            if gem is not None:
+                reworded = gem.rephrase(bp.explanation, text[lang], lang)
+                if reworded is not None:
+                    text[lang], text_source[lang] = reworded, "gemini"
         row = session.scalars(
             select(IrrigationPlan).where(IrrigationPlan.block_id == b.id, IrrigationPlan.day == day)
         ).first()
@@ -135,7 +143,7 @@ def plan_farm_day(session: Session, farm_id: uuid.UUID, day: date, now: datetime
         row.saved_aed = bp.saved_aed
         row.habit_yield_pct = bp.habit_yield_pct
         row.plan_yield_pct = bp.plan_yield_pct
-        row.explanation = bp.explanation
+        row.explanation = {**bp.explanation, "text_source": text_source}
         row.text = text
         row.fallbacks = list(bp.fallbacks)
         row.skip_reason = bp.skip_reason
