@@ -1,4 +1,5 @@
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { GRID, TICK, TOOLTIP } from './chartStyle'
 import type { SaltClock } from '../api/types'
 import { dayMonth } from '../lib/format'
 
@@ -30,16 +31,16 @@ export function SaltClockView({ clock: c, tz, cropName }: { clock: SaltClock; tz
         sub="FAO-29, ECe ≈ 1.5 × ECw" />
       <Stat label="Loses 10% / 25% of yield" value={c.date_loss_10 ? fullDate(c.date_loss_10, tz) : 'not on this trend'}
         sub={c.date_loss_25 ? `25%: ${fullDate(c.date_loss_25, tz)}` : ''} />
-      <div className="rounded-3xl bg-panel p-5 ring-1 ring-line md:col-span-3">
+      <div className="glass card-in rounded-[1.75rem] p-5 md:col-span-3">
         <h3 className="mb-2 font-semibold">Readings</h3>
         <div className="h-64" dir="ltr">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={c.points} margin={{ left: 0, right: 12, top: 8, bottom: 0 }}>
-              <CartesianGrid stroke="#d9ded9" strokeDasharray="3 3" />
-              <XAxis dataKey="day" tick={{ fontSize: 12 }} />
-              <YAxis tick={{ fontSize: 12 }} domain={['auto', 'auto']} />
-              <Tooltip formatter={(v) => [`${v} dS/m`, 'EC']} />
-              <Line type="monotone" dataKey="ec" stroke="#1d4ed8" strokeWidth={2.5} dot={{ r: 4 }} />
+              <CartesianGrid stroke={GRID} strokeDasharray="4 4" vertical={false} />
+              <XAxis dataKey="day" tick={TICK} axisLine={false} tickLine={false} />
+              <YAxis tick={TICK} axisLine={false} tickLine={false} domain={['auto', 'auto']} />
+              <Tooltip {...TOOLTIP} formatter={(v) => [`${v} dS/m`, 'EC']} />
+              <Line type="monotone" dataKey="ec" stroke="#f6b73c" strokeWidth={2.5} dot={{ r: 4, fill: '#f6b73c' }} animationDuration={900} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -47,10 +48,10 @@ export function SaltClockView({ clock: c, tz, cropName }: { clock: SaltClock; tz
           {[...new Set(c.points.map((p) => p.note).filter(Boolean))].slice(0, 3).map((n) => <li key={n}>Source: {n}</li>)}
         </ul>
       </div>
-      <div className="rounded-3xl bg-panel p-5 ring-1 ring-line md:col-span-3">
+      <div className="glass card-in rounded-[1.75rem] p-5 md:col-span-3">
         <h3 className="font-semibold">Crops that stay above 90% yield on this water two years after {c.stale ? asOf : 'today'}</h3>
         {c.suggested_crops.length ? (
-          <ul className="mt-2 flex flex-wrap gap-2">{c.suggested_crops.map((k) => <li key={k} className="rounded-full bg-palm/10 px-3 py-1 font-semibold text-palm">{cropName(k)}</li>)}</ul>
+          <ul className="mt-2 flex flex-wrap gap-2">{c.suggested_crops.map((k) => <li key={k} className="rounded-full bg-palm/20 px-3 py-1 font-semibold text-leaf">{cropName(k)}</li>)}</ul>
         ) : <p className="mt-1 text-ink-soft">None in the crop library.</p>}
       </div>
     </div>
@@ -59,9 +60,9 @@ export function SaltClockView({ clock: c, tz, cropName }: { clock: SaltClock; tz
 
 function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="rounded-3xl bg-panel p-5 ring-1 ring-line">
+    <div className="glass card-in rounded-[1.75rem] p-5">
       <div className="text-sm text-ink-soft">{label}</div>
-      <div className="num mt-1 text-3xl font-bold">{value}</div>
+      <div className="num mt-1 text-3xl">{value}</div>
       {sub && <div className="text-sm text-ink-soft">{sub}</div>}
     </div>
   )

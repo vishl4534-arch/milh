@@ -74,8 +74,8 @@ export function ReadingEntry({ bundle, lang, onClose, onSaved }: Props) {
 
   return (
     <div role="dialog" aria-modal="true" aria-label={t('entry.title')}
-      className="fade-in fixed inset-0 z-20 grid place-items-center bg-ink/60 p-4">
-      <div className="sheet-in w-full max-w-3xl rounded-[2rem] bg-panel p-5 shadow-xl">
+      className="fade-in fixed inset-0 z-30 grid place-items-center bg-black/60 p-4">
+      <div className="glass sheet-in w-full max-w-3xl rounded-[2rem] bg-[#151a11]/90 p-5">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-display text-2xl font-bold">{t('entry.title')}</h2>
           <button type="button" onClick={onClose} aria-label={t('common.cancel')} className="text-3xl"><Cross /></button>

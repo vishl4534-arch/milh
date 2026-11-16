@@ -14,7 +14,8 @@ import { ReadingEntry } from './ReadingEntry'
 import { assistantStatus } from './voice/api'
 import { VoiceMode } from './voice/VoiceMode'
 import { MilhLogo, MilhMark } from '../brand/Logo'
-import { SkyScene } from './scene/SkyScene'
+import { dayMonth, hhmm } from '../lib/format'
+import { greetingKey } from './greeting'
 
 export function KioskApp({ farmId }: { farmId?: string }) {
   const { t, i18n } = useTranslation()
@@ -90,9 +91,10 @@ export function KioskApp({ farmId }: { farmId?: string }) {
 
   if (isLoading) {
     return (
-      <div className="grid min-h-dvh place-items-center bg-salt">
+      <div className="earth grid place-items-center">
+        <div aria-hidden className="earth-backdrop" />
         <span className="flex flex-col items-center gap-3 text-xl text-ink-soft">
-          <MilhMark className="rise-in h-24 w-20" />
+          <MilhMark color="#f7f8f4" className="rise-in h-24 w-20" />
           {t('common.loading')}
         </span>
       </div>
@@ -100,7 +102,8 @@ export function KioskApp({ farmId }: { farmId?: string }) {
   }
   if (error || !data) {
     return (
-      <div className="grid min-h-dvh place-items-center gap-4 p-6 text-center">
+      <div className="earth grid place-items-center gap-4 p-6 text-center">
+        <div aria-hidden className="earth-backdrop" />
         <p className="text-xl">{error instanceof Error ? error.message : t('kiosk.noPlan')}</p>
         <button type="button" className="press rounded-xl bg-ink px-6 py-3 text-salt" onClick={() => refetch()}>{t('common.retry')}</button>
       </div>
@@ -108,29 +111,39 @@ export function KioskApp({ farmId }: { farmId?: string }) {
   }
 
   if (!unlocked) {
-    // The first tap of the day (it also lets the browser play sound): the sun comes up over the farm.
-    const sun = data.bundle.sun
+    // The first tap of the day (it also lets the browser play sound): a sunrise on a date farm, a greeting,
+    // and one big button.
+    const tz = data.bundle.farm.timezone
     return (
-      <button type="button" onClick={() => { player.unlock(); setUnlocked(true) }} className="block min-h-dvh w-full p-3 text-ink">
-        <SkyScene tall now={now} tz={data.bundle.farm.timezone}
-          sunrise={sun?.sunrise ? Date.parse(sun.sunrise) : null} sunset={sun?.sunset ? Date.parse(sun.sunset) : null}>
-          <span className="flex min-h-[calc(100dvh-1.5rem)] flex-col items-center justify-center gap-5 px-6 pb-24 text-center">
-            <span className="sun-rise relative grid size-44 place-items-center">
+      <button type="button" onClick={() => { player.unlock(); setUnlocked(true) }}
+        className="earth relative block w-full overflow-hidden bg-[#0b0e07] text-start">
+        <img src="/scenes/farm-hero.webp" alt="" className="kenburns absolute inset-0 h-full w-full object-cover" />
+        <span aria-hidden className="absolute inset-0 bg-[linear-gradient(90deg,rgba(11,14,7,.85)_0%,rgba(11,14,7,.55)_45%,rgba(11,14,7,.05)_80%)] rtl:bg-[linear-gradient(270deg,rgba(11,14,7,.85)_0%,rgba(11,14,7,.55)_45%,rgba(11,14,7,.05)_80%)]" />
+        <span className="relative flex min-h-dvh flex-col justify-between gap-8 p-6 md:p-12">
+          <MilhLogo color="#f7f8f4" className="card-in h-11 w-auto self-start" />
+          <span className="flex max-w-xl flex-col gap-4">
+            <span className="card-in text-3xl text-white/85 md:text-4xl" style={{ animationDelay: '120ms' }}>{t(greetingKey(now, tz))},</span>
+            <span className="card-in text-5xl font-bold leading-[1.05] text-white md:text-7xl" style={{ animationDelay: '200ms' }}>{data.bundle.farm.name}</span>
+            <span className="card-in text-xl text-white/80" style={{ animationDelay: '280ms' }}>{t('login.artTitle')}</span>
+            <span className="card-in num text-lg text-white/70" style={{ animationDelay: '340ms' }}>{dayMonth(now, tz)} · {hhmm(now, tz)}</span>
+          </span>
+          <span className="card-in flex items-center gap-5" style={{ animationDelay: '420ms' }}>
+            <span className="relative grid size-24 shrink-0 place-items-center md:size-28">
               <span aria-hidden className="ring absolute inset-0 rounded-full bg-sun" />
-              <span className="relative grid size-44 place-items-center rounded-full bg-sun text-7xl text-ink shadow-[0_20px_50px_-15px_rgba(183,121,31,.9)]">
+              <span className="relative grid size-24 place-items-center rounded-full bg-sun text-5xl text-[#0b0e07] shadow-[0_20px_50px_-15px_rgba(246,183,60,.8)] md:size-28">
                 <Speaker />
               </span>
             </span>
-            <span className="rise-in rounded-3xl bg-white/90 px-8 py-4 shadow-lg" style={{ animationDelay: '500ms' }}>
-              <MilhLogo className="mx-auto mb-2 h-10 w-auto" />
-              <span className="block font-display text-4xl font-bold">{t('kiosk.tapToStart')}</span>
-              <span className="mt-1 block text-lg text-ink-soft">{data.bundle.farm.name} · {t('kiosk.tapToStartHint')}</span>
+            <span className="flex flex-col">
+              <span className="text-3xl font-bold text-white md:text-4xl">{t('kiosk.tapToStart')}</span>
+              <span className="text-lg text-white/75">{t('kiosk.tapToStartHint')}</span>
             </span>
           </span>
-        </SkyScene>
+        </span>
       </button>
     )
   }
+
 
   return (
     <>
@@ -143,8 +156,10 @@ export function KioskApp({ farmId }: { farmId?: string }) {
           onClose={() => { setVoiceOpen(false); void qc.invalidateQueries({ queryKey: ['bundle'] }) }} />
       )}
       {entry && (
-        <ReadingEntry bundle={data.bundle} lang={lang} onClose={() => setEntry(false)}
-          onSaved={() => void qc.invalidateQueries({ queryKey: ['bundle'] })} />
+        <div className="earth-scope">
+          <ReadingEntry bundle={data.bundle} lang={lang} onClose={() => setEntry(false)}
+            onSaved={() => void qc.invalidateQueries({ queryKey: ['bundle'] })} />
+        </div>
       )}
     </>
   )

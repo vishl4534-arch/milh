@@ -19,14 +19,17 @@ interface Props {
   tz: string
   children?: ReactNode
   tall?: boolean
+  className?: string
+  /** where the sun's arc runs; a small card keeps it low so it never sits behind its text */
+  sunBand?: string
 }
 
-export function SkyScene({ now, sunrise, sunset, tz, children, tall = false }: Props) {
+export function SkyScene({ now, sunrise, sunset, tz, children, tall = false, className = '', sunBand = 'inset-x-[6%] top-[10%] bottom-[46%]' }: Props) {
   const sky = skyAt(now, sunrise, sunset, tz)
   const night = sky.phase === 'night'
   return (
     <div data-phase={sky.phase}
-      className={`relative isolate overflow-hidden rounded-3xl ${tall ? 'min-h-dvh' : 'min-h-[13.5rem]'}`}>
+      className={`relative isolate overflow-hidden rounded-3xl ${tall ? 'min-h-dvh' : 'min-h-[13.5rem]'} ${className}`}>
       {(Object.keys(SKIES) as Phase[]).map((p) => (
         <div key={p} aria-hidden className="sky-layer absolute inset-0" style={{ background: SKIES[p], opacity: p === sky.phase ? 1 : 0 }} />
       ))}
@@ -40,7 +43,7 @@ export function SkyScene({ now, sunrise, sunset, tz, children, tall = false }: P
       </svg>
 
       {/* the sun (or moon) on its arc: X follows the time of day, Y follows the height of the arc */}
-      <div aria-hidden className="pointer-events-none absolute inset-x-[6%] top-[10%] bottom-[46%]">
+      <div aria-hidden className={`pointer-events-none absolute ${sunBand}`}>
         <div className="sun-glide h-full w-full" style={{ transform: `translateX(${night ? 50 : sky.progress * 100}%)` }}>
           <div className="sun-glide h-full w-full" style={{ transform: `translateY(${night ? 8 : (1 - sky.height) * 100}%)` }}>
             {night ? (
