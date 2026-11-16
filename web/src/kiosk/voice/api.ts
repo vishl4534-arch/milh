@@ -9,6 +9,7 @@ export interface AssistantReply {
   context: Record<string, unknown>
   resume: boolean
   message?: string | null
+  lang?: string | null // the language of the reply
 }
 
 export interface Line {
@@ -32,16 +33,17 @@ export async function fetchLines(lang: string, farmId?: string): Promise<Record<
   return r.lines
 }
 
-export async function askText(body: { question: string; lang: string; history: Turn[]; context: Record<string, unknown>;
+export async function askText(body: { question: string; lang: string; fallback?: string; history: Turn[]; context: Record<string, unknown>;
   farm_id?: string }): Promise<AssistantReply> {
   return api('/api/v1/assistant/text', { method: 'POST', json: body })
 }
 
-export async function askAudio(blob: Blob, opts: { lang: string; history: Turn[]; context: Record<string, unknown>;
+export async function askAudio(blob: Blob, opts: { lang: string; fallback?: string; history: Turn[]; context: Record<string, unknown>;
   interrupted?: string; farmId?: string }): Promise<AssistantReply> {
   const form = new FormData()
   form.append('audio', blob, blob.type.includes('mp4') ? 'question.mp4' : 'question.webm')
   form.append('lang', opts.lang)
+  if (opts.fallback) form.append('fallback', opts.fallback)
   form.append('history', JSON.stringify(opts.history))
   form.append('context', JSON.stringify(opts.context))
   if (opts.interrupted) form.append('interrupted', opts.interrupted)

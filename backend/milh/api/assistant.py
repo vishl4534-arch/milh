@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 
 from milh.assistant import chat as chat_mod
 from milh.assistant import llm, voice
-from milh.assistant.tools import languages, t
+from milh.assistant.tools import detect_language, languages, t
 from milh.auth import Principal, current_principal, farm_for
 from milh.db import get_session, utcnow
 from milh.kiosk import build_bundle
@@ -36,7 +36,8 @@ class Turn(BaseModel):
 
 class TextIn(BaseModel):
     question: str = Field(min_length=1, max_length=1000)
-    lang: str = "en"
+    lang: str = "en"  # or "auto": answer in the language of the question
+    fallback: str = "en"  # used with "auto" when the language cannot be told
     history: list[Turn] = Field(default_factory=list, max_length=20)
     context: dict[str, Any] | None = None
     farm_id: uuid.UUID | None = None
@@ -52,10 +53,18 @@ class Reply(BaseModel):
     provider: str | None = None
     resume: bool = False
     message: str | None = None
+    lang: str | None = None  # the language of the reply
 
 
 def _lang(lang: str) -> str:
     return lang if lang in languages() else "en"
+
+
+def _mode(lang: str, fallback: str) -> tuple[bool, str]:
+    """("auto", fallback) or a fixed language: whether to detect, and the language to use meanwhile."""
+    if lang == "auto":
+        return True, _lang(fallback)
+    return False, _lang(lang)
 
 
 def _farm(session: Session, p: Principal, farm_id: uuid.UUID | None) -> Farm:
@@ -91,13 +100,14 @@ def _answer(session: Session, farm: Farm, p: Principal, lang: str, question: str
     res = chat_mod.turn(session, farm, p.user, lang, history, context, question, utcnow(),
                         complete=llm.complete)
     return Reply(transcript=question, reply=res.reply, audio_url=_audio_url(res.reply, lang), pending=res.pending,
-                 context=res.context, provider=res.provider)
+                 context=res.context, provider=res.provider, lang=lang)
 
 
 @router.get("/status")
-def status(p: Member, session: DB, lang: str = "en", farm_id: uuid.UUID | None = None) -> dict[str, Any]:
+def status(p: Member, session: DB, lang: str = "en", farm_id: uuid.UUID | None = None,
+           fallback: str = "en") -> dict[str, Any]:
     _farm(session, p, farm_id)
-    lang = _lang(lang)
+    lang = _mode(lang, fallback)[1]
     thinking, speaking = llm.available(), voice.available(lang)
     reason = None
     if not thinking:
@@ -108,10 +118,11 @@ def status(p: Member, session: DB, lang: str = "en", farm_id: uuid.UUID | None =
 
 
 @router.get("/lines")
-def lines(p: Member, session: DB, lang: str = "en", farm_id: uuid.UUID | None = None) -> dict[str, Any]:
+def lines(p: Member, session: DB, lang: str = "en", farm_id: uuid.UUID | None = None,
+          fallback: str = "en") -> dict[str, Any]:
     """Greeting and filler lines, prepared now so they play the moment they are needed."""
     _farm(session, p, farm_id)
-    lang = _lang(lang)
+    lang = _mode(lang, fallback)[1]
     out = {}
     for key in LINE_KEYS:
         text = t(key, lang)
@@ -122,7 +133,9 @@ def lines(p: Member, session: DB, lang: str = "en", farm_id: uuid.UUID | None = 
 @router.post("/text", response_model=Reply)
 def ask_text(body: TextIn, p: Member, session: DB) -> Reply:
     farm = _farm(session, p, body.farm_id)
-    lang = _lang(body.lang)
+    auto, lang = _mode(body.lang, body.fallback)
+    if auto:
+        lang = _lang(detect_language(body.question, lang))
     if not llm.available():
         return Reply(ok=False, reply=t("unavailable", lang), message="assistant not available")
     return _answer(session, farm, p, lang, body.question, [m.model_dump() for m in body.history], body.context)
@@ -138,9 +151,10 @@ async def ask_audio(
     context: Annotated[str, Form()] = "{}",
     interrupted: Annotated[str, Form()] = "",
     farm_id: Annotated[uuid.UUID | None, Form()] = None,
+    fallback: Annotated[str, Form()] = "en",
 ) -> Reply:
     farm = _farm(session, p, farm_id)
-    lang = _lang(lang)
+    auto, lang = _mode(lang, fallback)
     if not (voice.available(lang) and llm.available()):
         return Reply(ok=False, reply=t("unavailable", lang), message="assistant not available")
     try:
@@ -154,9 +168,18 @@ async def ask_audio(
     if len(data) > MAX_AUDIO_BYTES:
         raise HTTPException(413, "recording too long")
     try:
-        question = await run_in_threadpool(voice.transcribe, data, audio.filename or "q.webm",
-                                           audio.content_type or "audio/webm", lang,
-                                           _keyterms(session, farm, lang))
+        if auto:
+            question, heard_lang = await run_in_threadpool(voice.transcribe_auto, data, audio.filename or "q.webm",
+                                                           audio.content_type or "audio/webm",
+                                                           _keyterms(session, farm, lang))
+            if heard_lang in languages() and voice.available(heard_lang):
+                lang = heard_lang
+            elif question:
+                lang = _lang(detect_language(question, lang))
+        else:
+            question = await run_in_threadpool(voice.transcribe, data, audio.filename or "q.webm",
+                                               audio.content_type or "audio/webm", lang,
+                                               _keyterms(session, farm, lang))
     except voice.VoiceError as e:
         log.warning("%s", e)
         return Reply(ok=False, reply=t("unavailable", lang), message="speech-to-text failed")
@@ -164,7 +187,7 @@ async def ask_audio(
         return Reply(resume=True, transcript=question, context=ctx)
     if not question:
         said = t("not_heard", lang)
-        return Reply(reply=said, audio_url=_audio_url(said, lang), context=ctx)
+        return Reply(reply=said, audio_url=_audio_url(said, lang), context=ctx, lang=lang)
     return await run_in_threadpool(_answer, session, farm, p, lang, question, past, ctx)
 
 

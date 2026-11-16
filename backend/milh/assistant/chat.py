@@ -29,10 +29,13 @@ log = logging.getLogger("milh.assistant.chat")
 LANG_NAMES = {"en": "English", "ur": "Urdu", "ar": "Arabic", "hi": "Hindi"}
 
 YES = {"yes", "yeah", "yep", "ok", "okay", "sure", "correct", "right", "haan", "han", "ha", "ji", "jee", "haanji",
-       "hanji", "theek", "thik", "ہاں", "جی", "ٹھیک", "हाँ", "हां", "जी", "✔"}
-NO = {"no", "nope", "nah", "cancel", "nahi", "nahin", "na", "mat", "نہیں", "نا", "मत", "नहीं", "✖"}
+       "hanji", "theek", "thik", "ہاں", "جی", "ٹھیک", "हाँ", "हां", "जी", "✔",
+       "نعم", "ايوه", "أيوه", "اي", "تمام", "طيب", "صح", "اكيد", "أكيد", "حاضر", "ماشي"}
+NO = {"no", "nope", "nah", "cancel", "nahi", "nahin", "na", "mat", "نہیں", "نا", "मत", "नहीं", "✖",
+      "لا", "لأ", "كلا", "الغاء", "إلغاء"}
 # Words that may sit next to a yes or no without changing it ("yes please", "haan ji", "no thanks").
-FILLER = {"please", "thanks", "thank", "you", "ji", "jee", "hai", "sir", "boss", "bhai", "جی", "ہے", "شکریہ"}
+FILLER = {"please", "thanks", "thank", "you", "ji", "jee", "hai", "sir", "boss", "bhai", "جی", "ہے", "شکریہ",
+          "من", "فضلك", "لو", "سمحت", "شكرا", "شكرًا", "يا", "اخي", "أخي"}
 # Number and time words: the model's own small talk may contain none of these (numbers come from code only).
 NUMBER_WORDS = {
     "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve",
@@ -43,6 +46,9 @@ NUMBER_WORDS = {
     "minat", "ghanta", "ghante",
     "ایک", "دو", "تین", "چار", "پانچ", "چھ", "سات", "آٹھ", "نو", "دس", "بیس", "سو", "منٹ", "گھنٹہ", "گھنٹے", "لیٹر",
     "एक", "दो", "तीन", "चार", "पांच", "छह", "सात", "आठ", "नौ", "दस", "मिनट", "घंटे", "लीटर",
+    "واحد", "اثنان", "اثنين", "ثلاثة", "ثلاث", "أربعة", "اربعة", "خمسة", "ستة", "سبعة", "ثمانية", "تسعة", "عشرة",
+    "عشرين", "ثلاثين", "مئة", "مية", "ألف", "نصف", "ربع", "دقيقة", "دقائق", "دقايق", "ساعة", "ساعات", "لتر",
+    "لترات", "بالمئة",
 }
 
 Complete = Callable[[list[dict[str, Any]], list[dict[str, Any]]], tuple[dict[str, Any], str]]

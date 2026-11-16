@@ -75,6 +75,30 @@ NUMBER_WORDS: dict[str, list[str]] = {
     "5": ["five", "fifth", "paanch", "panch", "پانچ", "पांच"], "6": ["six", "chhe", "چھ", "छह"],
     "7": ["seven", "saat", "سات", "सात"], "8": ["eight", "aath", "آٹھ", "आठ"], "9": ["nine", "nau", "نو", "नौ"],
 }
+_AR_NUMBERS = {"1": ["واحد", "الأول", "الاول"], "2": ["اثنين", "اثنان", "الثاني"], "3": ["ثلاثة", "الثالث"],
+               "4": ["أربعة", "اربعة", "الرابع"], "5": ["خمسة", "الخامس"], "6": ["ستة", "السادس"],
+               "7": ["سبعة", "السابع"], "8": ["ثمانية", "الثامن"], "9": ["تسعة", "التاسع"]}
+for _n, _words in _AR_NUMBERS.items():
+    NUMBER_WORDS[_n] += _words
+# Arabic-Indic and Eastern (Urdu) digits as plain digits, so "بلوك ٢" finds Block 2.
+_DIGITS = str.maketrans("٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹", "01234567890123456789")
+# Letters Urdu uses and Arabic does not: they tell an Urdu sentence from an Arabic one.
+_URDU_ONLY = set("ٹڈڑںےۓہۂھگچپژکی")
+_ROMAN_URDU = {"kitna", "kitni", "kitne", "pani", "aaj", "kab", "kya", "kyun", "hai", "hain", "ko", "ka", "ki",
+               "mein", "nahi", "haan", "bataen", "batao", "ghante", "minat", "tanki", "namak", "mitti"}
+
+
+def detect_language(text: str, fallback: str) -> str:
+    """The language a typed or heard sentence is in, from its script: Urdu, Arabic or English.
+    Hindi script counts as Urdu (spoken Urdu is often written down in Hindi letters)."""
+    if re.search(r"[\u0900-\u097F]", text):
+        return "ur"
+    if re.search(r"[\u0600-\u06FF]", text):
+        return "ur" if any(c in _URDU_ONLY for c in text) else "ar"
+    words = set(re.findall(r"[a-z]+", text.lower()))
+    if words:
+        return "ur" if len(words & _ROMAN_URDU) >= 2 else "en"
+    return fallback
 
 
 def _has(text: str, word: str) -> bool:
@@ -85,7 +109,7 @@ def _has(text: str, word: str) -> bool:
 
 def match_block(text: str | None, blocks: list[KBlock]) -> KBlock | None:
     """The one block the words point to, or None if none or several match (then the assistant asks)."""
-    said = (text or "").lower().strip()
+    said = (text or "").lower().strip().translate(_DIGITS)
     if not said:
         return None
     hits: set[str] = set()

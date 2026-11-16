@@ -4,14 +4,29 @@
 // is only saved after a spoken yes or the ✔ button.
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Check, Cross, Speaker } from '../../components/icons'
+import { Check, Cross } from '../../components/icons'
 import { askAudio, askText, fetchLines, type AssistantReply, type Line, type Turn } from './api'
 import { createDetector } from './levels'
+import { VoiceOrb } from './VoiceOrb'
 
 type State = 'starting' | 'listening' | 'thinking' | 'speaking' | 'nomic'
+/** Which language the assistant answers in: the one the worker spoke ("auto"), or always one language. */
+type Mode = 'auto' | 'ur' | 'ar' | 'en'
+const MODES: { key: Mode; label: string }[] = [
+  { key: 'auto', label: '' }, { key: 'ur', label: 'اردو' }, { key: 'ar', label: 'العربية' }, { key: 'en', label: 'English' },
+]
+const MODE_KEY = 'milh.voiceMode'
 const WAIT_MS = 1500
-const LEVEL_EVERY_MS = 80 // the orb is redrawn at most this often
 const hasMic = () => typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia
+
+function savedMode(): Mode {
+  try {
+    const m = localStorage.getItem(MODE_KEY)
+    return m === 'ur' || m === 'ar' || m === 'en' || m === 'auto' ? m : 'auto'
+  } catch {
+    return 'auto'
+  }
+}
 
 interface Props {
   lang: string
@@ -36,8 +51,13 @@ export function VoiceMode({ lang, farmId, onClose }: Props) {
   const [pending, setPending] = useState<Record<string, string> | null>(null)
   const [busy, setBusy] = useState(false)
   const [typed, setTyped] = useState('')
-  const [level, setLevel] = useState(0)
+  const [mode, setModeState] = useState<Mode>(savedMode)
+  const [lastLang, setLastLang] = useState<string>(() => (savedMode() === 'auto' ? lang : savedMode()))
 
+  const level = useRef(0) // read by the orb every frame
+  const audioCtx = useRef<AudioContext | null>(null)
+  const outAnalyser = useRef<AnalyserNode | null>(null) // the assistant's own voice, for the orb
+  const replyLang = useRef(lastLang) // the language of the last answer: the fallback while detecting
   const ctx = useRef<Record<string, unknown>>({})
   const history = useRef<Turn[]>([])
   const lines = useRef<Record<string, Line>>({})
@@ -110,6 +130,15 @@ export function VoiceMode({ lang, farmId, onClose }: Props) {
     }
     stopRecording()
     const a = new Audio(url)
+    // Route the answer through an analyser so the orb moves with the voice. Only when the audio context
+    // is running: a suspended context would silence the answer.
+    const ac = audioCtx.current
+    if (ac && outAnalyser.current) {
+      void ac.resume().catch(() => undefined)
+      if (ac.state === 'running') {
+        try { ac.createMediaElementSource(a).connect(outAnalyser.current) } catch { /* plays normally */ }
+      }
+    }
     answerAudio.current = a
     saying.current = text
     detector.current.reset()
@@ -119,7 +148,7 @@ export function VoiceMode({ lang, farmId, onClose }: Props) {
     a.play().catch(finish)
   }, [])
 
-  const ask = useCallback(async (input: { text?: string; blob?: Blob; interrupted?: string }) => {
+  const ask = useCallback(async (input: { text?: string; blob?: Blob; interrupted?: string; fixedLang?: string }) => {
     if (busyRef.current || !open.current) return
     busyRef.current = true
     setBusy(true)
@@ -128,10 +157,13 @@ export function VoiceMode({ lang, farmId, onClose }: Props) {
     waitTimer.current = window.setTimeout(() => playFiller(lines.current.wait?.audio_url), WAIT_MS)
     let r: AssistantReply | null = null
     let failure = ''
+    // "auto" answers in the language the worker used; the last answer's language covers unclear cases.
+    const askLang = input.fixedLang ?? mode
+    const fallback = replyLang.current
     try {
       r = input.blob
-        ? await askAudio(input.blob, { lang, history: history.current, context: ctx.current, interrupted: input.interrupted, farmId })
-        : await askText({ question: input.text ?? '', lang, history: history.current, context: ctx.current, farm_id: farmId })
+        ? await askAudio(input.blob, { lang: askLang, fallback, history: history.current, context: ctx.current, interrupted: input.interrupted, farmId })
+        : await askText({ question: input.text ?? '', lang: askLang, fallback, history: history.current, context: ctx.current, farm_id: farmId })
     } catch (err) {
       failure = err instanceof Error ? err.message : String(err)
     }
@@ -146,6 +178,10 @@ export function VoiceMode({ lang, farmId, onClose }: Props) {
     }
     if (r.resume) { listen(); return }
     const heard = r.transcript || input.text || ''
+    if (r.lang) {
+      replyLang.current = r.lang
+      setLastLang(r.lang)
+    }
     ctx.current = r.context ?? {}
     setPending(r.pending ?? null)
     if (heard) history.current.push({ role: 'user', content: heard })
@@ -153,7 +189,7 @@ export function VoiceMode({ lang, farmId, onClose }: Props) {
     history.current = history.current.slice(-12)
     setLog((l) => [...l.slice(-5), { heard, reply: r.reply }])
     speak(r.audio_url, r.reply, listen)
-  }, [farmId, lang, listen, speak])
+  }, [farmId, mode, listen, speak])
 
   const finishRecording = useCallback(() => {
     const r = recording.current
@@ -169,21 +205,35 @@ export function VoiceMode({ lang, farmId, onClose }: Props) {
     r.rec.stop()
   }, [ask])
 
-  // Microphone, level meter and the frame loop.
+  // Greeting and filler lines in the language the assistant will start in.
+  const lineLang = mode === 'auto' ? lang : mode
+  useEffect(() => {
+    void fetchLines(lineLang, farmId).then((l) => { lines.current = l }).catch(() => undefined)
+  }, [farmId, lineLang])
+
+  // Microphone, level meters and the frame loop.
   useEffect(() => {
     open.current = true
     let cancelled = false
-    let ac: AudioContext | null = null
     let raf = 0
-    void fetchLines(lang, farmId).then((l) => { lines.current = l }).catch(() => undefined)
+    const AC = (window as unknown as { AudioContext?: typeof AudioContext }).AudioContext
+    let ac: AudioContext | null = null
+    try {
+      if (AC) {
+        ac = new AC()
+        const out = ac.createAnalyser()
+        out.fftSize = 512
+        out.connect(ac.destination)
+        audioCtx.current = ac
+        outAnalyser.current = out
+      }
+    } catch { ac = null }
     if (hasMic()) {
       navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 } })
         .then((s) => {
           if (cancelled) { s.getTracks().forEach((tr) => tr.stop()); return }
           stream.current = s
-          const AC = (window as unknown as { AudioContext?: typeof AudioContext }).AudioContext
-          if (AC) {
-            ac = new AC()
+          if (ac) {
             const src = ac.createMediaStreamSource(s)
             const band = ac.createBiquadFilter() // the voice band only
             band.type = 'bandpass'
@@ -202,13 +252,30 @@ export function VoiceMode({ lang, farmId, onClose }: Props) {
     }
 
     const buf = new Float32Array(1024)
+    const outBuf = new Float32Array(512)
     let last = performance.now()
-    let lastDraw = 0
     let smooth = 0
     const tick = (now: number) => {
       const dt = Math.min(100, now - last)
       last = now
       const an = analyser.current
+      // The orb follows the assistant's voice while it talks (or a gentle talking rhythm if its sound
+      // cannot be measured), the worker's voice while listening, and rests otherwise.
+      const st = stateRef.current
+      if (st === 'speaking') {
+        const out = outAnalyser.current
+        let v = 0
+        if (out && answerAudio.current && !answerAudio.current.paused) {
+          out.getFloatTimeDomainData(outBuf)
+          let sum = 0
+          for (let i = 0; i < outBuf.length; i++) sum += outBuf[i] * outBuf[i]
+          v = Math.min(1, Math.sqrt(sum / outBuf.length) * 5)
+        }
+        if (v === 0) v = 0.3 + 0.25 * Math.abs(Math.sin(now / 160) * Math.sin(now / 410))
+        level.current = v
+      } else if (st !== 'listening' || !an) {
+        level.current = st === 'thinking' ? 0.12 : 0.04
+      }
       if (an) {
         an.getFloatTimeDomainData(buf)
         let sum = 0
@@ -230,10 +297,7 @@ export function VoiceMode({ lang, farmId, onClose }: Props) {
           }
         }
         smooth = smooth * 0.6 + Math.min(1, rms * 6) * 0.4
-        if (now - lastDraw > LEVEL_EVERY_MS) {
-          lastDraw = now
-          setLevel(smooth)
-        }
+        if (stateRef.current === 'listening') level.current = smooth
       }
       raf = requestAnimationFrame(tick)
     }
@@ -249,9 +313,20 @@ export function VoiceMode({ lang, farmId, onClose }: Props) {
       stream.current?.getTracks().forEach((tr) => tr.stop())
       stream.current = null
       analyser.current = null
+      outAnalyser.current = null
+      audioCtx.current = null
       void ac?.close()
     }
-  }, [farmId, finishRecording, lang, listen, speak])
+  }, [finishRecording, listen, speak])
+
+  function setMode(m: Mode) {
+    setModeState(m)
+    if (m !== 'auto') {
+      replyLang.current = m
+      setLastLang(m)
+    }
+    try { localStorage.setItem(MODE_KEY, m) } catch { /* the choice just isn't remembered */ }
+  }
 
   function submit(e: FormEvent) {
     e.preventDefault()
@@ -269,33 +344,33 @@ export function VoiceMode({ lang, farmId, onClose }: Props) {
 
   return (
     <div role="dialog" aria-modal="true" aria-label={t('kiosk.ask')}
-      className="fade-in fixed inset-0 z-30 flex flex-col items-center justify-between gap-4 bg-[radial-gradient(ellipse_at_50%_35%,#2f6b4f_0%,#1b2421_70%)] p-6 text-salt">
-      <div className="flex w-full justify-end">
-        <button type="button" onClick={onClose} aria-label={t('voice.close')}
-          className="grid size-14 place-items-center rounded-full bg-salt/10 text-3xl"><Cross /></button>
-      </div>
-      <div className="flex flex-col items-center gap-6 text-center">
-        <div className="relative grid size-56 place-items-center">
-          {state === 'listening' && [0, 0.8, 1.6].map((d) => (
-            <span key={d} aria-hidden className="ring absolute inset-4 rounded-full bg-leaf" style={{ animationDelay: `${d}s` }} />
+      className="fade-in fixed inset-0 z-30 flex flex-col items-center justify-between gap-4 bg-[radial-gradient(ellipse_at_50%_38%,#1f4d37_0%,#11241a_55%,#0b150f_100%)] p-6 text-salt">
+      <div className="flex w-full items-center justify-between gap-3">
+        <div role="group" aria-label={t('voice.answerIn')} className="flex flex-wrap items-center gap-1 rounded-full bg-white/8 p-1 ring-1 ring-white/10">
+          {MODES.map((m) => (
+            <button key={m.key} type="button" onClick={() => setMode(m.key)} aria-pressed={mode === m.key}
+              className={`press rounded-full px-4 py-2 text-base font-bold transition-colors duration-200 ${mode === m.key ? 'bg-[#f7f8f4] text-[#0f2a1d]' : 'text-salt/75 hover:text-salt'}`}>
+              {m.key === 'auto' ? t('voice.auto') : m.label}
+            </button>
           ))}
-          <div aria-hidden className="sheet-in relative grid size-48 place-items-center rounded-full bg-[radial-gradient(circle_at_35%_30%,#5fae78,#2f6b4f)] shadow-[0_20px_60px_-20px_rgba(79,157,105,.9)] transition-transform duration-150"
-            style={{ transform: `scale(${1 + level * 0.35})` }}>
-            <Speaker className="text-7xl" />
-          </div>
         </div>
+        <button type="button" onClick={onClose} aria-label={t('voice.close')}
+          className="press grid size-14 shrink-0 place-items-center rounded-full bg-salt/10 text-3xl"><Cross /></button>
+      </div>
+      <div className="flex flex-col items-center gap-5 text-center">
+        <VoiceOrb state={state} level={level} />
         <p role="status" className="text-2xl font-semibold">{label[state]}</p>
         {last && (
           <div className="max-w-3xl space-y-3" aria-live="polite">
-            {last.heard && <p className="text-xl text-salt/70">“{last.heard}”</p>}
-            <p key={last.reply} className="rise-in text-2xl leading-relaxed md:text-3xl">{last.reply}</p>
+            {last.heard && <p dir="auto" className="text-xl text-salt/70">“{last.heard}”</p>}
+            <p key={last.reply} dir="auto" lang={lastLang} className="voice-reply rise-in text-2xl leading-relaxed md:text-3xl">{last.reply}</p>
           </div>
         )}
         {pending && (
           <div className="flex gap-4">
-            <button type="button" onClick={() => void ask({ text: 'yes' })} disabled={busy} aria-label={t('voice.yes')}
+            <button type="button" onClick={() => void ask({ text: 'yes', fixedLang: replyLang.current })} disabled={busy} aria-label={t('voice.yes')}
               className="press pop grid h-20 w-32 place-items-center rounded-2xl bg-palm text-5xl disabled:opacity-40"><Check /></button>
-            <button type="button" onClick={() => void ask({ text: 'no' })} disabled={busy} aria-label={t('voice.no')}
+            <button type="button" onClick={() => void ask({ text: 'no', fixedLang: replyLang.current })} disabled={busy} aria-label={t('voice.no')}
               className="press pop grid h-20 w-32 place-items-center rounded-2xl bg-brine text-5xl disabled:opacity-40"><Cross /></button>
           </div>
         )}

@@ -132,6 +132,8 @@
     "close": "Close",
     "yes": "Yes",
     "no": "No",
-    "offline": "Voice help needs the internet"
+    "offline": "Voice help needs the internet",
+    "auto": "Auto",
+    "answerIn": "Answer language"
   }
 }

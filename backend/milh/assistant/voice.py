@@ -40,7 +40,10 @@ def _key() -> str:
 
 
 def _voice(lang: str) -> str:
-    return (get_settings().elevenlabs_voice_ids.get(lang) or "").strip()
+    """The voice for a language. Arabic without its own voice borrows the Urdu one: the v4 model speaks
+    both, so one multilingual voice covers the farm."""
+    ids = get_settings().elevenlabs_voice_ids
+    return (ids.get(lang) or (ids.get("ur") if lang == "ar" else "") or "").strip()
 
 
 def audio_dir() -> Path:
@@ -54,17 +57,34 @@ def available(lang: str | None = None) -> bool:
     return lang is None or (lang in LANG_CODES and bool(_voice(lang)))
 
 
+# Scribe's language codes back to ours. Spoken Urdu is often detected as Hindi: both mean "answer in Urdu".
+DETECTED = {"eng": "en", "en": "en", "urd": "ur", "ur": "ur", "hin": "ur", "hi": "ur", "ara": "ar", "ar": "ar"}
+
+
 def transcribe(audio: bytes, filename: str, content_type: str, lang: str, keyterms: list[str] | None = None) -> str:
     """The question as text, in the language chosen on the tablet (more accurate than guessing).
     Key terms (block, crop and tap names) help Scribe hear them right."""
+    return _scribe(audio, filename, content_type, lang, keyterms)[0]
+
+
+def transcribe_auto(audio: bytes, filename: str, content_type: str,
+                    keyterms: list[str] | None = None) -> tuple[str, str | None]:
+    """The question as text and the language it was spoken in ("en", "ur", "ar"), or None if unsure."""
+    text, code = _scribe(audio, filename, content_type, None, keyterms)
+    return text, DETECTED.get((code or "").lower())
+
+
+def _scribe(audio: bytes, filename: str, content_type: str, lang: str | None,
+            keyterms: list[str] | None) -> tuple[str, str | None]:
     if not available(lang):
         raise VoiceError("voice not available")
     if not audio:
-        return ""
+        return "", None
     s = get_settings()
     data: dict[str, str | list[str]] = {"model_id": s.elevenlabs_stt_model,
-                                        "language_code": LANG_CODES[lang]["stt"],
                                         "tag_audio_events": "false"}  # pumps and wind are not words
+    if lang:
+        data["language_code"] = LANG_CODES[lang]["stt"]
     if keyterms:
         data["keyterms"] = keyterms
     try:
@@ -74,7 +94,8 @@ def transcribe(audio: bytes, filename: str, content_type: str, lang: str, keyter
         raise VoiceError(f"speech-to-text failed: {e}") from e
     if r.status_code != 200:
         raise VoiceError(f"speech-to-text HTTP {r.status_code}: {r.text[:200]}")
-    return without_sound_tags(str(r.json().get("text") or ""))
+    body = r.json()
+    return without_sound_tags(str(body.get("text") or "")), body.get("language_code")
 
 
 _SOUND_TAG = re.compile(r"\([^()]*\)|\[[^\[\]]*\]")
