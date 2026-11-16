@@ -59,6 +59,18 @@ test('empty tank and water readings show empty state, not zero', () => {
   expect(within(water).queryByText('0%')).toBeNull()
 })
 
+test('a finished run nobody confirmed stays on screen with its Done button', () => {
+  const b = bundleFixture()
+  render(
+    <KioskView state={{ bundle: b, offline: false, cachedAt: null }} lang="en" now={Date.parse('2026-11-16T13:00:00+04:00')}
+      onDone={vi.fn()} onListen={vi.fn()} onLang={vi.fn()} onAddReading={vi.fn()} />,
+  )
+  const now = screen.getByRole('region', { name: 'Now' })
+  expect(within(now).getByText('Not confirmed yet')).toBeInTheDocument()
+  expect(within(now).getByRole('button', { name: /Done/ })).toBeInTheDocument()
+  expect(screen.queryByText('All watering done for today')).toBeNull()
+})
+
 test('offline badge shows cached time', () => {
   view(bundleFixture(), true)
   expect(screen.getByText(/Offline · data from 04:00/)).toBeInTheDocument()

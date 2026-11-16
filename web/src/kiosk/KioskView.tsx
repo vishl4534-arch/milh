@@ -21,8 +21,9 @@ export interface KioskViewProps {
   onUnblockSound?: () => void
 }
 
-function focusRun(runs: KRun[], now: number): KRun | null {
-  return runs.find((r) => r.steps.length > 0 && !r.done && r.end !== null && Date.parse(r.end) >= now) ?? null
+function focusRun(runs: KRun[]): KRun | null {
+  // The earliest run not yet confirmed: a finished run stays here until the worker taps Done.
+  return runs.find((r) => r.steps.length > 0 && !r.done) ?? null
 }
 
 export function KioskView(props: KioskViewProps) {
@@ -30,7 +31,7 @@ export function KioskView(props: KioskViewProps) {
   const { t } = useTranslation()
   const b = state.bundle
   const tz = b.farm.timezone
-  const focus = focusRun(b.runs, now)
+  const focus = focusRun(b.runs)
   const nextAnn = b.announcements.find((a) => a.status === 'scheduled' && Date.parse(a.scheduled_at) >= now) ?? null
 
   return (
@@ -138,7 +139,8 @@ function NowCard({ run, hasRuns, state, lang, now, onDone, onListen }: KioskView
       </section>
     )
   }
-  const running = run.start !== null && Date.parse(run.start) <= now
+  const running = run.start !== null && Date.parse(run.start) <= now && (run.end === null || Date.parse(run.end) >= now)
+  const overdue = run.end !== null && Date.parse(run.end) < now
   const progress = running && run.start && run.end
     ? Math.min(1, (now - Date.parse(run.start)) / (Date.parse(run.end) - Date.parse(run.start))) : null
   const startAnn = state.bundle.announcements.find((a) => a.plan_id === run.plan_id && a.type === 'irrigation_start') ?? null
@@ -146,7 +148,7 @@ function NowCard({ run, hasRuns, state, lang, now, onDone, onListen }: KioskView
     <section aria-label={t('kiosk.now')} className="rounded-3xl bg-panel p-5 ring-1 ring-line md:p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <div className="text-sm font-semibold uppercase tracking-wider text-palm">{running ? t('kiosk.now') : t('kiosk.next')}</div>
+          <div className="text-sm font-semibold uppercase tracking-wider text-palm">{overdue ? t('kiosk.unconfirmed') : running ? t('kiosk.now') : t('kiosk.next')}</div>
           <h2 className="font-display text-3xl font-bold md:text-4xl">{run.block_name}</h2>
           <div className="flex items-center gap-2 text-xl text-ink-soft"><Leaf className="text-palm" />{pick(run.crop_names, lang)}</div>
         </div>

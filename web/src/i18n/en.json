@@ -17,6 +17,7 @@
     "noPlan": "No watering plan yet for today",
     "done": "Done",
     "doneSaved": "Marked as done",
+    "unconfirmed": "Not confirmed yet",
     "skipRain": "No watering: rain",
     "skipNoNeed": "No watering needed",
     "flush": "Long watering to wash out salt",
