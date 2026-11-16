@@ -9,15 +9,22 @@ from __future__ import annotations
 import os
 from collections.abc import Iterator
 
-import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, event
-from sqlalchemy.engine import Engine
-from sqlalchemy.orm import Session
-from sqlalchemy.pool import StaticPool
+# Tests never use real services or the developer's keys in backend/.env: environment variables win over
+# the .env file, so blanking them here keeps every test offline, free and repeatable.
+for _key in ("GEMINI_API_KEY", "GROQ_API_KEY", "ELEVENLABS_API_KEY"):
+    os.environ[_key] = ""
+os.environ["ELEVENLABS_VOICE_IDS"] = "{}"
+os.environ["JWT_SECRET"] = "test-only-secret-0123456789-0123456789-abcdef"
 
-from milh.db import get_session
-from milh.models import Base
+import pytest  # noqa: E402
+from fastapi.testclient import TestClient  # noqa: E402
+from sqlalchemy import create_engine, event  # noqa: E402
+from sqlalchemy.engine import Engine  # noqa: E402
+from sqlalchemy.orm import Session  # noqa: E402
+from sqlalchemy.pool import StaticPool  # noqa: E402
+
+from milh.db import get_session  # noqa: E402
+from milh.models import Base  # noqa: E402
 
 PG_URL = os.environ.get("TEST_DATABASE_URL")
 
