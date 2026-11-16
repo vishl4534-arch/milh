@@ -24,6 +24,13 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,mp3,json,csv}'],
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api/, /^\/media/],
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/,
+            handler: 'CacheFirst',
+            options: { cacheName: 'fonts', expiration: { maxEntries: 30, maxAgeSeconds: 31536000 } },
+          },
+        ],
       },
     }),
   ],
