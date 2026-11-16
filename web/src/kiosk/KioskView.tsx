@@ -113,7 +113,7 @@ export function KioskView(props: KioskViewProps) {
           )}
         </main>
 
-        <Dock nextAnn={nextAnn} tz={tz} lang={lang} canAsk={!!props.canAsk && !state.offline} onAsk={props.onAsk} onListen={props.onListen} />
+        <Dock nextAnn={nextAnn} run={selected} tz={tz} lang={lang} canAsk={!!props.canAsk && !state.offline} onAsk={props.onAsk} onListen={props.onListen} />
       </div>
       {bursts.map((bu) => <DropBurst key={bu.id} x={bu.x} y={bu.y} />)}
     </div>
@@ -538,13 +538,16 @@ function SoilTab({ blocks, lang, tz, today }: { blocks: KBlock[]; lang: Lang; tz
 }
 
 /** The bar at the bottom: replay the next announcement, see what it says, and ask by voice. */
-function Dock({ nextAnn, tz, lang, canAsk, onAsk, onListen }: {
-  nextAnn: KAnnouncement | null; tz: string; lang: Lang; canAsk: boolean; onAsk?: () => void; onListen: (a: KAnnouncement | null) => void
+function Dock({ nextAnn, run, tz, lang, canAsk, onAsk, onListen }: {
+  nextAnn: KAnnouncement | null; run: KRun | null; tz: string; lang: Lang; canAsk: boolean; onAsk?: () => void
+  onListen: (a: KAnnouncement | null, run?: KRun) => void
 }) {
   const { t } = useTranslation()
   return (
     <footer className="k-card card-in sticky bottom-3 z-10 flex items-center gap-4 p-3 md:p-3.5" style={{ animationDelay: '240ms' }}>
-      <button type="button" onClick={() => onListen(nextAnn)} disabled={!nextAnn} aria-label={t('common.listen')}
+      {/* The next announcement; with none left today, the job on screen is read instead. */}
+      <button type="button" onClick={() => (nextAnn ? onListen(nextAnn) : onListen(null, run ?? undefined))}
+        disabled={!nextAnn && !run} aria-label={t('common.listen')}
         className="press grid size-14 shrink-0 place-items-center rounded-2xl bg-[var(--k-sand)] text-3xl disabled:opacity-40">
         <Speaker />
       </button>

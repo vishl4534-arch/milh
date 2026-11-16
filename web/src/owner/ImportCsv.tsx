@@ -4,6 +4,8 @@ import type { ImportPreview } from '../api/types'
 
 type Kind = 'readings' | 'soil_tests'
 
+const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
+
 /** Upload a CSV, see every problem by row, and import only when the whole file is clean. */
 export function ImportCsv({ farmId, onImported }: { farmId: string; onImported?: () => void }) {
   const [kind, setKind] = useState<Kind>('readings')
@@ -26,7 +28,7 @@ export function ImportCsv({ farmId, onImported }: { farmId: string; onImported?:
       )
       setPreview(p)
       if (!dryRun) {
-        setMessage(`Imported ${p.created} rows${p.duplicates ? ` (${p.duplicates} already there)` : ''}.`)
+        setMessage(`Imported ${count(p.created, 'row', 'rows')}${p.duplicates ? ` (${p.duplicates} already there)` : ''}.`)
         onImported?.()
       }
     } catch (err) {
@@ -67,12 +69,12 @@ export function ImportCsv({ farmId, onImported }: { farmId: string; onImported?:
           className="rounded-xl bg-salt px-4 py-2 font-semibold ring-1 ring-line disabled:opacity-40">Check file</button>
         <button type="button" disabled={!clean || busy} onClick={() => send(false)}
           className="rounded-xl bg-ink px-4 py-2 font-semibold text-salt disabled:opacity-40">
-          Import {preview?.rows_ok ?? ''} rows
+          {preview ? `Import ${count(preview.rows_ok, 'row', 'rows')}` : 'Import rows'}
         </button>
       </div>
       {preview && (
         <div className="mt-3 text-sm">
-          <p><span className="num">{preview.rows_ok}</span> rows ready · <span className="num">{preview.errors.length}</span> problems</p>
+          <p><span className="num">{preview.rows_ok}</span> {preview.rows_ok === 1 ? 'row' : 'rows'} ready · <span className="num">{preview.errors.length}</span> {preview.errors.length === 1 ? 'problem' : 'problems'}</p>
           {preview.errors.length > 0 && (
             <table className="mt-2 w-full">
               <thead><tr className="text-start text-ink-soft"><th className="text-start">Row</th><th className="text-start">Column</th><th className="text-start">Problem</th></tr></thead>

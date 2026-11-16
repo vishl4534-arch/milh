@@ -39,6 +39,7 @@ export function KioskApp({ farmId }: { farmId?: string }) {
   useEffect(() => {
     player.onBlocked(() => setBlocked(true))
     player.onPlayed((a) => {
+      if (a.id.startsWith('run-')) return // read on demand, not a scheduled announcement
       void api(`/api/v1/announcements/${a.id}/played`, { method: 'POST' }).catch(() => undefined)
     })
     return () => player.stop()
@@ -77,8 +78,25 @@ export function KioskApp({ farmId }: { farmId?: string }) {
     await qc.invalidateQueries({ queryKey: ['bundle'] })
   }
 
-  function listen(a: KAnnouncement | null) {
-    if (a) void player.playNow(a)
+  /** Play an announcement. With none (e.g. the plan was made after the block's start time), read the
+   *  block's own instruction: the farm's voice from the server, or the tablet's voice when offline. */
+  async function listen(a: KAnnouncement | null, run?: KRun) {
+    if (a) {
+      void player.playNow(a)
+      return
+    }
+    if (!run) return
+    let text = run.text[lang] || run.text.en || ''
+    let audio: string | null = null
+    try {
+      const r = await api<{ text: string; audio_url: string | null }>(`/api/v1/kiosk/runs/${run.plan_id}/speech?lang=${lang}`)
+      text = r.text || text
+      audio = r.audio_url
+    } catch { /* offline: the tablet's own voice reads the text */ }
+    void player.playNow({
+      id: `run-${run.plan_id}`, type: 'irrigation_start', scheduled_at: new Date().toISOString(),
+      text: { [lang]: text }, audio: audio ? { [lang]: audio } : {}, status: 'scheduled', plan_id: run.plan_id,
+    })
   }
 
   useEffect(() => {

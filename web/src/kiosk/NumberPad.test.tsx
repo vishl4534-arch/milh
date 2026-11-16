@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { useState } from 'react'
 import { expect, test } from 'vitest'
 import { NumberPad } from './NumberPad'
@@ -28,4 +28,13 @@ test('only one decimal point', () => {
   render(<Harness />)
   press('1'); press('.'); press('.'); press('5')
   expect(screen.getByTestId('out').textContent).toBe('1.5')
+})
+
+test('two taps before the screen redraws still build one number', () => {
+  render(<Harness max={100} />)
+  const seven = screen.getByRole('button', { name: '7' })
+  const two = screen.getByRole('button', { name: '2' })
+  // both clicks inside one batch: the second must see the first
+  act(() => { seven.click(); two.click() })
+  expect(screen.getByTestId('out').textContent).toBe('72')
 })
