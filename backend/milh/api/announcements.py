@@ -8,12 +8,13 @@ from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
-from sqlalchemy import select, update
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from milh.auth import Principal, current_principal, farm_for, owned_farm, require_role
 from milh.db import get_session, utcnow
 from milh.farm_config import get_farm_settings
+from milh.irrigation_events import record_done
 from milh.models import Announcement, Block, IrrigationEvent, IrrigationPlan
 
 router = APIRouter(prefix="/api/v1", tags=["announcements"])
@@ -131,17 +132,7 @@ def post_event(body: EventIn, p: Member, session: DB) -> IrrigationEvent:
         plan = session.get(IrrigationPlan, body.plan_id)
         if plan is None or plan.block_id != block.id:
             raise HTTPException(422, "plan_id does not belong to this block")
-    ev = IrrigationEvent(id=body.id, plan_id=body.plan_id, block_id=block.id, source_id=body.source_id,
-                         started_at=body.started_at, minutes=body.minutes, method=body.method,
-                         confirmed_by_user_id=p.user.id)
-    session.add(ev)
-    if body.plan_id is not None:
-        session.execute(
-            update(Announcement)
-            .where(Announcement.plan_id == body.plan_id,
-                   Announcement.type.in_(["irrigation_start", "irrigation_switch_source", "irrigation_stop"]),
-                   Announcement.status.in_(["scheduled", "played"]))
-            .values(status="acknowledged")
-        )
+    ev = record_done(session, event_id=body.id, plan_id=body.plan_id, block_id=block.id, source_id=body.source_id,
+                     started_at=body.started_at, minutes=body.minutes, method=body.method, user_id=p.user.id)
     session.commit()
     return ev
