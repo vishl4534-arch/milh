@@ -17,10 +17,10 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./milh.db"
     jwt_secret: str = ""  # empty -> a random per-process secret (dev only); set in .env
     elevenlabs_api_key: str | None = None
-    elevenlabs_model_id: str = "eleven_multilingual_v2"
+    elevenlabs_model_id: str = "eleven_v4_turbo"  # speaks Urdu; multilingual_v2 does not
     elevenlabs_voice_ids: dict[str, str] = {}
     gemini_api_key: str | None = None
-    gemini_model: str = "gemini-2.5-flash"
+    gemini_model: str = "gemini-3.5-flash-lite"  # 2.5-flash is retired for new accounts
     media_dir: Path = Path("./media")
     # Voice assistant on the farm tablet (docs/2026-11-16-voice-assistant-design.md)
     assistant_enabled: bool = True
