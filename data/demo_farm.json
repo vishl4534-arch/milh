@@ -1,0 +1,42 @@
+{
+  "_label": "Example farm configuration — not a real farm. Layout, flows and costs are illustrative; all readings come from live or cited sources.",
+  "name": "Al Ain example farm",
+  "lat": 24.2075,
+  "lon": 55.7447,
+  "timezone": "Asia/Dubai",
+  "settings": {"languages": ["en", "ur"]},
+  "sources": [
+    {
+      "key": "well", "name": "Well", "kind": "well", "cost_per_m3": 0.5,
+      "declared_ec": null, "declared_ec_note": null,
+      "tap_label": {"en": "blue tap", "ur": "نیلا نل", "ar": "الصنبور الأزرق", "hi": "नीला नल"},
+      "tap_color": "#1d4ed8"
+    },
+    {
+      "key": "desal", "name": "Desalinated", "kind": "desal", "cost_per_m3": 5.0,
+      "declared_ec": null, "declared_ec_note": null,
+      "tap_label": {"en": "green tap", "ur": "سبز نل", "ar": "الصنبور الأخضر", "hi": "हरा नल"},
+      "tap_color": "#15803d"
+    }
+  ],
+  "blocks": [
+    {
+      "name": "Block 1", "crop_key": "date_palm", "area_m2": 5000, "planting_date": "2015-03-01",
+      "irrigation_type": "bubbler", "flow_l_per_h": 20000, "efficiency": 0.85,
+      "habit_minutes": 90, "habit_source": "well"
+    },
+    {
+      "name": "Block 2", "crop_key": "tomato", "area_m2": 1000, "planting_date": "2026-10-01",
+      "irrigation_type": "drip", "flow_l_per_h": 15000, "efficiency": 0.9,
+      "habit_minutes": 60, "habit_source": "well"
+    },
+    {
+      "name": "Block 3", "crop_key": "cucumber", "area_m2": 800, "planting_date": "2026-10-20",
+      "irrigation_type": "drip", "flow_l_per_h": 12000, "efficiency": 0.9,
+      "habit_minutes": 45, "habit_source": "well"
+    }
+  ],
+  "tanks": [
+    {"name": "Main tank", "capacity_l": 50000, "source": "well"}
+  ]
+}
