@@ -22,6 +22,17 @@ class Settings(BaseSettings):
     gemini_api_key: str | None = None
     gemini_model: str = "gemini-2.5-flash"
     media_dir: Path = Path("./media")
+    # Voice assistant on the farm tablet (docs/2026-11-16-voice-assistant-design.md)
+    assistant_enabled: bool = True
+    assistant_model: str = "gemini-3.5-flash-lite"
+    groq_api_key: str | None = None
+    groq_model: str = "openai/gpt-oss-120b"
+    groq_reasoning_effort: str = "low"
+    llm_providers: list[str] = ["gemini", "groq"]
+    llm_timeout_seconds: float = 4.0
+    llm_hedge_seconds: float = 1.5
+    elevenlabs_stt_model: str = "scribe_v3"
+    elevenlabs_tts_model_assistant: str = "eleven_v4_turbo"
     mqtt_url: str = "mqtt://localhost:1883"
     cors_origins: list[str] = ["http://localhost:5173"]
 
