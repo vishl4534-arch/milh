@@ -75,6 +75,23 @@ Keys go only in `backend/.env`. That file is git-ignored and the browser never s
 | `ELEVENLABS_API_KEY`, `ELEVENLABS_VOICE_IDS` | Spoken announcements. Without them the tablet plays a chime and uses the device's own voice. |
 | `GEMINI_API_KEY` | Friendlier wording, translating owner messages, reading lab reports. Optional: everything else works without it. |
 
+## Voice assistant on the farm tablet (optional)
+
+With keys set, the tablet shows a big **🎙 Ask** button. The worker asks in Urdu or English, for example:
+- "How long for Block 3?"
+- "Why less than usual?"
+- "Is the tank full?"
+- "When is sunset?"
+- "When is the soil test?"
+
+The tablet answers out loud. "Block 3 is done" is saved only after the worker says yes or taps ✔.
+
+- **How it works:** ElevenLabs speech-to-text → Gemini picks what to look up (Groq as an optional backup) → the answer is filled in from Milh's own data by code. The model never says a number.
+- **Keys:** needs `GEMINI_API_KEY`, `ELEVENLABS_API_KEY` and `ELEVENLABS_VOICE_IDS` (one voice per language). Without them the button is hidden and everything else works the same.
+- **Internet:** voice needs a connection. Offline, the tablet keeps its plan, announcements and DONE button.
+- **Before the demo:** check that the Scribe model in `ELEVENLABS_STT_MODEL` understands Urdu well, and choose an Urdu voice.
+- **Design:** [docs/2026-11-16-voice-assistant-design.md](docs/2026-11-16-voice-assistant-design.md).
+
 ## Getting data in
 
 | Channel | How |
