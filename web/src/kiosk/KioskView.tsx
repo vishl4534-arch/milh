@@ -210,7 +210,7 @@ function TabBar({ tab, onTab, rtl }: { tab: Tab; onTab: (t: Tab) => void; rtl: b
   const labels: Record<Tab, string> = { today: t('kiosk.today'), water: t('kiosk.water'), soil: t('kiosk.soil') }
   return (
     <div role="tablist" aria-label={t('kiosk.tabs')}
-      className="card-in relative mx-auto grid w-full max-w-5xl grid-cols-3 rounded-[1.5rem] bg-white p-1.5 shadow-[0_14px_34px_-24px_rgba(92,74,40,.45)]"
+      className="card-in relative mx-auto grid w-full max-w-5xl grid-cols-[repeat(3,minmax(0,1fr))] rounded-[1.5rem] bg-white p-1.5 shadow-[0_14px_34px_-24px_rgba(92,74,40,.45)]"
       style={{ animationDelay: '60ms' }}>
       <span aria-hidden className="tab-glide absolute inset-y-1.5 start-1.5 w-[calc((100%-0.75rem)/3)] rounded-[1.15rem] bg-[var(--k-green)] shadow-[0_10px_22px_-12px_rgba(47,107,79,.9)]"
         style={{ transform: `translateX(${(rtl ? -1 : 1) * idx * 100}%)` }} />
