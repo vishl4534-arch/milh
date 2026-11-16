@@ -48,7 +48,8 @@ def parse_soilgrids(data: dict[str, Any]) -> dict[str, Any]:
 
 
 def refresh_soil_profile(session: Session, farm: Farm, http: httpx.Client) -> SoilProfile:
-    params: list[tuple[str, str | int | float | bool | None]] = [("lon", farm.lon), ("lat", farm.lat), ("value", "mean")]
+    Param = tuple[str, str | int | float | bool | None]
+    params: list[Param] = [("lon", farm.lon), ("lat", farm.lat), ("value", "mean")]
     params += [("property", p) for p in ("clay", "sand", "silt", "phh2o")]
     params += [("depth", d) for d in DEPTHS]
     try:
