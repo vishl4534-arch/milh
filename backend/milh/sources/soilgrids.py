@@ -53,7 +53,7 @@ def refresh_soil_profile(session: Session, farm: Farm, http: httpx.Client) -> So
     params += [("property", p) for p in ("clay", "sand", "silt", "phh2o")]
     params += [("depth", d) for d in DEPTHS]
     try:
-        r = http.get(SOILGRIDS_URL, params=params, timeout=60)
+        r = http.get(SOILGRIDS_URL, params=params, timeout=30)
         r.raise_for_status()
         parsed = parse_soilgrids(r.json())
     except (httpx.HTTPError, ValueError) as e:
