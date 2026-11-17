@@ -238,30 +238,35 @@ function TodayTab({ farm, openAlerts }: { farm: Farm; openAlerts: number }) {
       </section>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
-        <section aria-label="Today's plan" className="k-card min-w-0">
+        <section aria-label="Today's plan" className="k-card flex min-w-0 flex-col overflow-hidden">
           <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b border-[var(--k-line)] px-5 py-4">
             <h2 className="text-[0.9375rem] font-semibold">Irrigation plan{day ? ` · ${dayMonth(day, farm.timezone)}` : ''}</h2>
             <span className="text-[0.8125rem] text-[var(--k-muted)]">{list.length} blocks · {list.filter((p) => p.skip_reason).length} skipped</span>
             <span className="ms-auto text-[0.8125rem] text-[var(--k-muted)]">Milh <b className="num font-semibold text-[var(--k-ink)]">{litres(planned)}</b> vs usual <span className="num">{litres(usual)}</span></span>
           </div>
-          <div className="px-5 pt-4">
-            <Compare rows={[['Usual routine', usual, 'var(--k-line-strong)'], ['Milh plan', planned, 'var(--k-green)'],
-              ...(habitWell ? [['Usual, from well', habitWell, '#c9d5e3'], ['Milh, from well', planWell, 'var(--k-water)']] as [string, number, string][] : [])]} />
+          <div className="grid gap-4 px-5 pt-4 sm:grid-cols-2 sm:gap-8">
+            <Compare title="All water" rows={[['Usual', usual, 'var(--k-line-strong)'], ['Milh', planned, 'var(--k-green)']]} />
+            {habitWell > 0 && <Compare title="From the well" rows={[['Usual', habitWell, '#c9d5e3'], ['Milh', planWell, 'var(--k-water)']]} />}
           </div>
           <ul className="mt-4 divide-y divide-[var(--k-line)] border-t border-[var(--k-line)] md:hidden">
             {list.map((p) => <PlanItem key={p.id} plan={p} sources={srcs} tz={farm.timezone} />)}
           </ul>
-          <div className="hidden overflow-x-auto px-5 pb-2 md:block">
-            <table className="data-table mt-4 w-full min-w-[46rem] text-[0.875rem]">
-              <thead><tr><th>Block</th><th>Window</th><th>Taps</th><th className="text-end">Minutes</th><th className="text-end">Water</th><th className="text-end">From well</th><th className="text-end">Yield</th></tr></thead>
+          <div className="hidden overflow-x-auto px-5 pb-3 md:block">
+            <table className="data-table mt-4 w-full min-w-[34rem] text-[0.875rem]">
+              <thead><tr><th>Block</th><th>Taps</th><th className="text-end">Minutes</th><th className="text-end">Water</th><th className="text-end">From well</th><th className="text-end">Yield</th></tr></thead>
               <tbody>
                 {list.map((p) => <PlanRow key={p.id} plan={p} sources={srcs} tz={farm.timezone} />)}
               </tbody>
             </table>
           </div>
+          <p className="mt-auto border-t border-[var(--k-line)] bg-[var(--k-green-soft)]/50 px-5 py-3.5 text-[0.8125rem] leading-relaxed text-[#21352c]">
+            <b className="font-semibold text-[var(--k-green)]">Why this beats the habit.</b> The usual routine pumps the same salty well
+            water every day: too much where the crop needs little, too little to wash salt out where it needs more. Milh sizes
+            each block to today's weather and blends in clean water only where salt demands it.
+          </p>
         </section>
 
-        <div className="grid content-start gap-4">
+        <div className="grid grid-rows-[1fr_auto] gap-4">
           {b ? <WeatherCard bundle={b} /> : <div className="k-card min-h-40" />}
           <Link to={`/owner/farms/${farm.id}/alerts`} className="k-card flex items-center gap-3 p-4 transition-colors hover:border-[var(--k-line-strong)]">
             <span className={`grid size-9 place-items-center rounded-lg ${openAlerts ? 'bg-[var(--k-amber-soft)] text-[var(--k-amber)]' : 'bg-[var(--k-green-soft)] text-[var(--k-green)]'}`}>
@@ -273,19 +278,16 @@ function TodayTab({ farm, openAlerts }: { farm: Farm; openAlerts: number }) {
             </span>
             <span aria-hidden className="ms-auto text-[var(--k-faint)]">→</span>
           </Link>
-          <div className="rounded-xl border border-[var(--k-line)] bg-[var(--k-green-soft)]/50 p-4 text-[0.875rem] leading-relaxed text-[#21352c]">
-            <div className="eyebrow mb-1.5 text-[var(--k-green)]">Why this beats the habit</div>
-            The usual routine pumps the same salty well water every day: too much where the crop needs little, too little to
-            wash salt out where it needs more. Milh sizes each block to today's weather and blends in clean water only where
-            salt demands it.
-          </div>
         </div>
       </div>
 
       <section aria-label="Decision detail" className="grid gap-3">
-        <div className="flex items-baseline justify-between">
+        <div>
           <h2 className="text-[0.9375rem] font-semibold">How each block was decided</h2>
-          <span className="text-[0.8125rem] text-[var(--k-muted)]">Every input, fallback and comparison</span>
+          <p className="max-w-4xl text-[0.8125rem] text-[var(--k-muted)]">
+            Every input and comparison with the usual routine. Yield is an FAO-29 (Maas–Hoffman) estimate; root-zone salt
+            comes from each option's own leaching, using the FAO-29 leaching equation solved for ECe.
+          </p>
         </div>
         {list.map((p) => <PlanDetail key={p.id} plan={p} sources={srcs} tz={farm.timezone} />)}
       </section>
@@ -305,12 +307,13 @@ function Stat({ label, value, note, tone = 'neutral' }: { label: string; value: 
 }
 
 /** Horizontal comparison bars on one shared scale. */
-function Compare({ rows }: { rows: [string, number, string][] }) {
+function Compare({ title, rows }: { title: string; rows: [string, number, string][] }) {
   const max = Math.max(1, ...rows.map((r) => r[1]))
   return (
-    <div className="grid gap-2">
+    <div className="grid content-start gap-2">
+      <div className="eyebrow">{title}</div>
       {rows.map(([label, v, color]) => (
-        <div key={label} className="grid grid-cols-[6.75rem_minmax(0,1fr)_4.75rem] items-center gap-3 text-[0.8125rem] sm:grid-cols-[8.5rem_minmax(0,1fr)_5.5rem]">
+        <div key={label} className="grid grid-cols-[3rem_minmax(0,1fr)_4.75rem] items-center gap-3 text-[0.8125rem]">
           <span className="text-[var(--k-muted)]">{label}</span>
           <span className="h-2 overflow-hidden rounded-full bg-[var(--k-sand-soft)]">
             <span className="grow-x block h-full rounded-full" style={{ width: `${(v / max) * 100}%`, background: color }} />
@@ -330,14 +333,13 @@ function PlanRow({ plan: p, sources, tz }: { plan: Plan; sources: Source[]; tz: 
         <div className="font-medium">{p.block_name}</div>
         <div className="text-[0.8125rem] capitalize text-[var(--k-muted)]">{p.crop_key.replace('_', ' ')}</div>
       </td>
-      <td className="mono text-[0.8125rem] text-[var(--k-muted)]">{p.start_at ? `${hhmm(p.start_at, tz)}–${hhmm(p.end_at, tz)}` : '—'}</td>
       <td>
         {p.skip_reason ? <span className="chip chip-blue"><Rain /> {p.skip_reason === 'rain' ? 'Rain' : 'Not needed'}</span> : (
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-col items-start gap-1">
             {p.steps.map((s, i) => {
               const src = byId.get(s.source_id)
               return (
-                <span key={i} className="chip chip-neutral">
+                <span key={i} className="chip chip-neutral whitespace-nowrap">
                   <span aria-hidden className="size-2 rounded-full" style={{ background: src?.tap_color ?? '#888' }} />
                   {src ? pick(src.tap_label, 'en') || src.name : 'tap'} <span className="mono">{s.minutes}m</span>
                 </span>
@@ -346,10 +348,13 @@ function PlanRow({ plan: p, sources, tz }: { plan: Plan; sources: Source[]; tz: 
           </div>
         )}
       </td>
-      <td className="text-end"><span className="num font-semibold">{p.minutes}</span><span className="num text-[var(--k-faint)]"> / {String(p.explanation.habit_minutes ?? '—')}</span></td>
+      <td className="whitespace-nowrap text-end">
+        <div><span className="num font-semibold">{p.minutes}</span><span className="num text-[var(--k-faint)]"> / {String(p.explanation.habit_minutes ?? '—')}</span></div>
+        <div className="mono text-[0.75rem] text-[var(--k-muted)]">{p.start_at ? `${hhmm(p.start_at, tz)}–${hhmm(p.end_at, tz)}` : '—'}</div>
+      </td>
       <td className="text-end"><Delta now={p.gross_l} was={p.habit_l} /></td>
       <td className="text-end">{p.plan_well_l != null && p.habit_well_l != null ? <Delta now={p.plan_well_l} was={p.habit_well_l} /> : '—'}</td>
-      <td className="num text-end">
+      <td className="num whitespace-nowrap text-end">
         {p.habit_yield_pct != null && p.plan_yield_pct != null
           ? <><span className="text-[var(--k-faint)]">{Math.round(p.habit_yield_pct)}% →</span> <span className="font-semibold">{Math.round(p.plan_yield_pct)}%</span></>
           : '—'}
@@ -406,8 +411,9 @@ function WeatherCard({ bundle }: { bundle: KioskBundle }) {
   const w = bundle.weather
   const today = w?.daily.find((d) => d.day === bundle.day)
   const temp = w?.current.temperature_2m
+  const next = (w?.daily ?? []).filter((d) => d.day > bundle.day).slice(0, 3)
   return (
-    <section aria-label="Weather" className="k-card p-4">
+    <section aria-label="Weather" className="k-card flex flex-col p-4">
       <div className="flex items-center justify-between">
         <span className="flex items-center gap-1.5 text-[0.8125rem] font-medium text-[var(--k-muted)]"><Thermo /> Weather · Open-Meteo</span>
         {w && <span className={`chip ${w.age_h > 6 ? 'chip-amber' : 'chip-neutral'}`}>{ageText(w.age_h, t)}</span>}
@@ -424,10 +430,28 @@ function WeatherCard({ bundle }: { bundle: KioskBundle }) {
             <Cell label={<><Sunrise /> Sunrise</>} value={hhmm(bundle.sun?.sunrise ?? null, tz)} />
             <Cell label={<><Sunset /> Sunset</>} value={hhmm(bundle.sun?.sunset ?? null, tz)} />
           </dl>
+          {next.length > 0 && (
+            <div className="mt-auto pt-4">
+              <div className="eyebrow mb-1.5">Coming days</div>
+              <ul className="divide-y divide-[var(--k-line)] border-t border-[var(--k-line)] text-[0.8125rem]">
+                {next.map((d) => (
+                  <li key={d.day} className="grid grid-cols-[2.75rem_1fr_auto] items-baseline gap-2 py-1.5">
+                    <span className="font-medium">{weekday(d.day)}</span>
+                    <span className="num text-[var(--k-muted)]">{d.tmin_c != null ? `${Math.round(d.tmin_c)}–` : ''}{Math.round(d.tmax_c)}°</span>
+                    <span className="num text-end text-[var(--k-muted)]">ET₀ {d.et0_mm.toFixed(1)} mm{d.rain_mm >= 0.1 ? <span className="text-[var(--k-water)]"> · rain {d.rain_mm.toFixed(1)}</span> : null}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </>
       ) : <p className="mt-3 text-[0.875rem] text-[var(--k-muted)]">No forecast yet. Use “Fetch live weather”.</p>}
     </section>
   )
+}
+
+function weekday(day: string) {
+  return new Date(`${day}T12:00:00Z`).toLocaleDateString('en', { weekday: 'short', timeZone: 'UTC' })
 }
 
 function Cell({ label, value }: { label: ReactNode; value: string }) {

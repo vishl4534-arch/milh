@@ -28,7 +28,8 @@ test('PlanDetail shows fallback chips and habit comparison', () => {
   expect(screen.getByText('15,000 L')).toBeInTheDocument()
   expect(screen.getByText('10,957 L')).toBeInTheDocument()
   expect(screen.getByText(/71%/)).toBeInTheDocument()
-  expect(screen.getByText(/Yield is an estimate/)).toBeInTheDocument()
+  expect(screen.getByRole('table', { name: 'Usual routine vs Milh' })).toBeInTheDocument()
+  expect(screen.getByText('Saved vs usual')).toBeInTheDocument()
 })
 
 test('ImportCsv shows row errors and disables commit until clean', async () => {
