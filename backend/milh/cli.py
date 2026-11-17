@@ -17,7 +17,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from milh.auth import hash_secret, new_api_key
+from milh.config import get_settings
 from milh.db import session_factory
+from milh.demo import seed_demo, write_accounts
 from milh.farm_config import load_farm_config, seed_crops
 from milh.models import Device, FarmMember, User
 
@@ -56,6 +58,9 @@ def main(argv: list[str] | None = None) -> None:
     cd.add_argument("--kind", choices=["kiosk", "sensor", "gateway"], required=True)
     cd.add_argument("--name", required=True)
 
+    sd = sub.add_parser("seed-demo", help="create demo owner/worker accounts and a tablet key for the login pages")
+    sd.add_argument("--farm", required=True)
+
     a = ap.parse_args(argv)
     with session_factory()() as session:
         if a.cmd == "seed-crops":
@@ -87,6 +92,13 @@ def main(argv: list[str] | None = None) -> None:
             session.add(dev)
             session.commit()
             print(f"Device id={dev.id}\nAPI key (shown once): {key}")
+        elif a.cmd == "seed-demo":
+            accounts = seed_demo(session, uuid.UUID(a.farm))
+            session.commit()
+            path = get_settings().demo_accounts_file
+            write_accounts(accounts, path)
+            print(f"Demo accounts for {accounts.farm}: {len(accounts.owners)} owner-side, "
+                  f"{len(accounts.workers)} workers. Written to {path}. Set DEMO_MODE=true to show them.")
 
 
 if __name__ == "__main__":

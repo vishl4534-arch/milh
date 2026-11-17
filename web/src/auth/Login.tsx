@@ -1,9 +1,11 @@
-import { useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
 import { api, setToken } from '../api/client'
 import { MilhLogo } from '../brand/Logo'
-import { Eye, EyeOff } from '../components/icons'
+import { Check, Eye, EyeOff } from '../components/icons'
+import type { Lang } from '../api/types'
+import { setLanguage } from '../i18n'
 import { SkyScene } from '../kiosk/scene/SkyScene'
 
 const DEVICE_KEY = 'milh.deviceKey'
@@ -46,6 +48,69 @@ function ArtPanel({ sources }: { sources: string[] }) {
 }
 
 const SHARED_ART = '/login-art.webp'
+
+interface DemoOwner { name: string; title: string; role: string; email: string; password: string; note: string }
+interface DemoWorker { name: string; title: string; language: string; pin: string; device_key: string; note: string }
+interface DemoList { farm: string; owners: DemoOwner[]; workers: DemoWorker[] }
+
+/** Demo accounts from the server (only when it runs in DEMO_MODE); null when there are none. */
+function useDemoAccounts(): DemoList | null {
+  const [list, setList] = useState<DemoList | null>(null)
+  useEffect(() => {
+    let live = true
+    fetch('/api/v1/demo/accounts')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: DemoList | null) => { if (live) setList(d) })
+      .catch(() => undefined)
+    return () => { live = false }
+  }, [])
+  return list
+}
+
+function initials(name: string) {
+  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join('')
+}
+
+/** One-click demo sign-ins: picking an account fills the form above; the user then signs in. */
+function DemoPicker<T extends { name: string; title: string; note: string }>({ farm, items, chosen, onPick, detail }: {
+  farm: string; items: T[]; chosen: string | null; onPick: (a: T) => void; detail: (a: T) => string
+}) {
+  if (!items.length) return null
+  return (
+    <section aria-label="Demo accounts" className="mt-8">
+      <div className="flex items-center gap-3 text-xs font-medium text-ink-soft">
+        <span className="h-px flex-1 bg-[#e4e5e1]" />
+        <span>Or use a demo account{farm ? ` · ${farm}` : ''}</span>
+        <span className="h-px flex-1 bg-[#e4e5e1]" />
+      </div>
+      <ul className="mt-3 grid gap-2">
+        {items.map((a) => {
+          const on = chosen === a.name
+          return (
+            <li key={a.name}>
+              <button type="button" onClick={() => onPick(a)} aria-pressed={on}
+                className={`flex w-full items-center gap-3 rounded-lg border bg-white px-3 py-2.5 text-start transition-[border-color,box-shadow] duration-150 hover:border-[#bfc2bc] ${
+                  on ? 'border-[#0e6b4b] shadow-[0_0_0_3px_rgb(14_107_75/0.12)]' : 'border-[#e4e5e1]'}`}>
+                <span className={`grid size-9 shrink-0 place-items-center rounded-full text-[0.8125rem] font-semibold ${on ? 'bg-[#0e6b4b] text-white' : 'bg-[#eeefeb] text-[#111513]'}`}>
+                  {on ? <Check /> : initials(a.name)}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-baseline gap-2">
+                    <span className="truncate text-[0.9375rem] font-medium">{a.name}</span>
+                    <span className="truncate text-xs text-ink-soft">{a.title}</span>
+                  </span>
+                  <span className="block truncate font-mono text-xs text-[#8d938f]">{detail(a)}</span>
+                </span>
+                <span className="shrink-0 text-xs font-medium text-[#0e6b4b]">{on ? 'Filled in' : 'Use'}</span>
+              </button>
+            </li>
+          )
+        })}
+      </ul>
+      <p className="mt-2 text-xs text-[#8d938f]">Demo accounts for judging. Pick one, then sign in.</p>
+    </section>
+  )
+}
 
 interface ShellProps {
   art: string[]
@@ -111,6 +176,9 @@ export function OwnerLogin() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const demo = useDemoAccounts()
+  const [chosen, setChosen] = useState<string | null>(null)
+  const submitRef = useRef<HTMLButtonElement>(null)
   async function submit(e: FormEvent) {
     e.preventDefault()
     setError('')
@@ -130,14 +198,18 @@ export function OwnerLogin() {
       footer={<>{t('login.toKiosk')} <Link to="/kiosk/login" className="font-semibold text-ink underline-offset-4 hover:underline">{t('login.toKioskLink')}</Link></>}>
       <form onSubmit={submit} className="flex flex-col gap-5">
         <label className={label}>{t('login.email')}
-          <input className={field} type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          <input className={field} type="email" autoComplete="username" value={email} onChange={(e) => { setEmail(e.target.value); setChosen(null) }} required />
         </label>
         <label className={label}>{t('login.password')}
-          <SecretInput value={password} onChange={setPassword} autoComplete="current-password" />
+          <SecretInput value={password} onChange={(v) => { setPassword(v); setChosen(null) }} autoComplete="current-password" />
         </label>
         <ErrorLine text={error} />
-        <button className={submitBtn} disabled={busy}>{t('login.submit')}</button>
+        <button ref={submitRef} className={submitBtn} disabled={busy}>{t('login.submit')}</button>
       </form>
+      {demo && (
+        <DemoPicker farm={demo.farm} items={demo.owners} chosen={chosen} detail={(o) => o.email}
+          onPick={(o) => { setEmail(o.email); setPassword(o.password); setChosen(o.name); setError(''); submitRef.current?.focus() }} />
+      )}
     </Shell>
   )
 }
@@ -151,6 +223,9 @@ export function KioskLogin() {
   const [pin, setPin] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const demo = useDemoAccounts()
+  const [chosen, setChosen] = useState<string | null>(null)
+  const submitRef = useRef<HTMLButtonElement>(null)
   async function submit(e: FormEvent) {
     e.preventDefault()
     setError('')
@@ -159,6 +234,11 @@ export function KioskLogin() {
       const r = await api<{ access_token: string }>('/api/v1/auth/kiosk', { method: 'POST', json: { device_key: key.trim(), pin } })
       try { localStorage.setItem(DEVICE_KEY, key.trim()) } catch { /* ignore */ }
       setToken(r.access_token)
+      // The tablet speaks the signed-in worker's own language.
+      try {
+        const me = await api<{ language: string }>('/api/v1/me')
+        if (me.language) await setLanguage(me.language as Lang)
+      } catch { /* keep the current language */ }
       nav('/kiosk')
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
@@ -171,14 +251,19 @@ export function KioskLogin() {
       footer={<>{t('login.toOwner')} <Link to="/login" className="font-semibold text-ink underline-offset-4 hover:underline">{t('login.toOwnerLink')}</Link></>}>
       <form onSubmit={submit} className="flex flex-col gap-5">
         <label className={label}>{t('login.deviceKey')}
-          <input className={field} value={key} onChange={(e) => setKey(e.target.value)} required />
+          <input className={field} value={key} onChange={(e) => { setKey(e.target.value); setChosen(null) }} required />
         </label>
         <label className={label}>{t('login.pin')}
-          <SecretInput value={pin} onChange={setPin} pin />
+          <SecretInput value={pin} onChange={(v) => { setPin(v); setChosen(null) }} pin />
         </label>
         <ErrorLine text={error} />
-        <button className={`${submitBtn} bg-palm`} disabled={busy}>{t('login.kioskSubmit')}</button>
+        <button ref={submitRef} className={submitBtn} disabled={busy}>{t('login.kioskSubmit')}</button>
       </form>
+      {demo && (
+        <DemoPicker farm={demo.farm} items={demo.workers} chosen={chosen}
+          detail={(w) => `PIN ${w.pin} · ${w.note}`}
+          onPick={(w) => { setKey(w.device_key); setPin(w.pin); setChosen(w.name); setError(''); submitRef.current?.focus() }} />
+      )}
     </Shell>
   )
 }

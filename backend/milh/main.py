@@ -11,6 +11,7 @@ from milh.api import (
     announcements,
     assistant,
     auth,
+    demo,
     farms,
     imports,
     kiosk,
@@ -38,7 +39,8 @@ def create_app() -> FastAPI:
     def health() -> dict[str, str]:
         return {"status": "ok"}
 
-    routers = (auth, farms, imports, readings, weather, plans, announcements, kiosk, reports, alerts, lab, assistant)
+    routers = (auth, demo, farms, imports, readings, weather, plans, announcements, kiosk, reports, alerts, lab,
+               assistant)
     for module in routers:
         app.include_router(module.router)
 

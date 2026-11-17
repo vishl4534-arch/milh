@@ -40,6 +40,10 @@ class Settings(BaseSettings):
     elevenlabs_tts_model_assistant: str = "eleven_v4_turbo"
     mqtt_url: str = "mqtt://localhost:1883"
     cors_origins: list[str] = ["http://localhost:5173"]
+    # Demo mode: the sign-in pages list ready-made demo accounts (from `milh.cli seed-demo`) that a
+    # judge can click to fill in. Never enable it on a farm with real users.
+    demo_mode: bool = False
+    demo_accounts_file: Path = Path("./demo_accounts.json")
 
 
 @lru_cache
