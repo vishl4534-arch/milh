@@ -1,4 +1,5 @@
 import json
+from datetime import timedelta
 
 import pytest
 
@@ -14,7 +15,13 @@ def _tool(name: str, **args: object) -> dict:
 
 
 @pytest.fixture
-def farm_worker(session):  # type: ignore[no-untyped-def]
+def farm_worker(session, monkeypatch: pytest.MonkeyPatch):  # type: ignore[no-untyped-def]
+    # The plan is for DAY; the tablet and the assistant ask for "today", so their clock is pinned to that
+    # morning (otherwise these tests only pass on DAY itself).
+    import milh.api.kiosk as kiosk_api
+    morning = NOW + timedelta(hours=4)  # 07:00 in Dubai on DAY
+    monkeypatch.setattr(api_mod, "utcnow", lambda: morning)
+    monkeypatch.setattr(kiosk_api, "utcnow", lambda: morning)
     _owner, farm, *_rest = _setup(session)
     plan_farm_day(session, farm.id, DAY, NOW)
     worker = make_user(session, role="worker")
