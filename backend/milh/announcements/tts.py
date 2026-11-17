@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import uuid
 from datetime import datetime, timedelta
 from functools import lru_cache
 from pathlib import Path
@@ -60,10 +61,15 @@ class ElevenLabsTts:
         return r.content
 
 
+def clip_rel(text: str, lang: str, tts: TtsClient) -> str:
+    """Where the clip for this text lives in the current voice. Changing the voice changes the path."""
+    digest = hashlib.sha256(f"{lang}|{tts.voice_key(lang)}|{text}".encode()).hexdigest()[:32]
+    return f"audio/{digest}.mp3"
+
+
 def audio_for(text: str, lang: str, tts: TtsClient, media_dir: Path) -> str:
     """Return the media-relative path of the clip, generating it only if it does not exist yet."""
-    digest = hashlib.sha256(f"{lang}|{tts.voice_key(lang)}|{text}".encode()).hexdigest()[:32]
-    rel = f"audio/{digest}.mp3"
+    rel = clip_rel(text, lang, tts)
     path = media_dir / rel
     if not path.exists():
         data = tts.synthesize(text, lang)
@@ -74,22 +80,36 @@ def audio_for(text: str, lang: str, tts: TtsClient, media_dir: Path) -> str:
     return rel
 
 
+def stale_langs(a: Announcement, tts: TtsClient) -> list[str]:
+    """Languages whose clip is missing or was made in an older voice."""
+    have = a.audio or {}
+    return [lang for lang, text in (a.text or {}).items() if text and have.get(lang) != clip_rel(text, lang, tts)]
+
+
+def current_audio(a: Announcement, tts: TtsClient | None) -> dict[str, str]:
+    """The announcement's clips, leaving out any made in an older voice (the tablet then asks for a new one)."""
+    if tts is None:
+        return dict(a.audio or {})
+    stale = set(stale_langs(a, tts))
+    return {lang: rel for lang, rel in (a.audio or {}).items() if lang in (a.text or {}) and lang not in stale}
+
+
 def attach_audio(session: Session, a: Announcement, tts: TtsClient | None, media_dir: Path) -> int:
-    """Fill a.audio for each language that has text. Failures leave that language without audio;
-    the kiosk then shows the text with a chime."""
+    """Fill a.audio for each language that has text, in the current voice (older clips are replaced).
+    Failures leave that language without audio; the kiosk then shows the text with a chime."""
     if tts is None:
         return 0
     added = 0
     audio = dict(a.audio or {})
-    for lang, text in (a.text or {}).items():
-        if lang in audio:
-            continue
+    for lang in stale_langs(a, tts):
+        text = a.text[lang]
+        audio.pop(lang, None)
         try:
             audio[lang] = audio_for(text, lang, tts, media_dir)
             added += 1
         except Exception as e:  # network, quota, missing voice
             log.warning("TTS failed for announcement %s (%s): %s", a.id, lang, e)
-    if added:
+    if added or audio != (a.audio or {}):
         a.audio = audio
         flag_modified(a, "audio")
         session.flush()
@@ -97,15 +117,17 @@ def attach_audio(session: Session, a: Announcement, tts: TtsClient | None, media
 
 
 def generate_missing_audio(session: Session, tts: TtsClient | None, media_dir: Path, now: datetime,
-                           horizon: timedelta = timedelta(hours=36)) -> int:
+                           horizon: timedelta = timedelta(hours=36), farm_id: uuid.UUID | None = None) -> int:
     if tts is None:
         return 0
     q = select(Announcement).where(Announcement.status == "scheduled",
                                    Announcement.scheduled_at >= now - timedelta(hours=1),
                                    Announcement.scheduled_at <= now + horizon)
+    if farm_id is not None:
+        q = q.where(Announcement.farm_id == farm_id)
     done = 0
-    for a in session.scalars(q):
-        if set(a.text or {}) - set(a.audio or {}) and attach_audio(session, a, tts, media_dir):
+    for a in list(session.scalars(q)):
+        if stale_langs(a, tts) and attach_audio(session, a, tts, media_dir):
             done += 1
     return done
 

@@ -15,6 +15,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from milh.announcements.service import render_all
+from milh.announcements.tts import current_audio, get_tts
 from milh.farm_config import get_farm_settings
 from milh.models import Alert, Announcement, Block, Crop, Farm, IrrigationPlan, Reading, SoilTest, Tank, WaterSource
 from milh.planning.soil_due import soil_due_for_block
@@ -283,7 +284,9 @@ def build_bundle(session: Session, farm: Farm, now: datetime) -> KioskBundle:
         Announcement.farm_id == farm.id, Announcement.scheduled_at >= lo,
         Announcement.scheduled_at < lo + timedelta(days=2), Announcement.status != "cancelled",
     ).order_by(Announcement.scheduled_at))
-    k_anns = [KAnnouncement(id=a.id, type=a.type, scheduled_at=a.scheduled_at, text=a.text, audio=_media(a.audio),
+    tts = get_tts()
+    k_anns = [KAnnouncement(id=a.id, type=a.type, scheduled_at=a.scheduled_at, text=a.text,
+                            audio=_media(current_audio(a, tts)),
                             status=a.status, plan_id=a.plan_id) for a in anns]
 
     k_alerts: list[KAlert] = []

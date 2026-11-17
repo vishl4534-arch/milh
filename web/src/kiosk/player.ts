@@ -1,3 +1,4 @@
+import { api } from '../api/client'
 import type { KAnnouncement } from '../api/types'
 import { pick } from '../i18n'
 import { audioUrl } from './offline'
@@ -101,6 +102,18 @@ function playUrl(url: string): Promise<void> {
 
 const speak = speakNatural
 
+/** No clip in the bundle yet (or only one in an older voice): ask the server to make it in the announcer's
+ *  voice now. Offline or with no voice configured, null, and the tablet's own voice reads the text. */
+async function fetchClip(a: KAnnouncement, lang: string): Promise<string | null> {
+  if (a.id.startsWith('run-')) return null
+  try {
+    const r = await api<{ audio_url: string | null }>(`/api/v1/kiosk/announcements/${a.id}/speech?lang=${lang}`)
+    return r.audio_url
+  } catch {
+    return null
+  }
+}
+
 /** Chime, then the cached ElevenLabs clip. With no clip, the device's best voice reads the text with
  *  natural phrasing (see speech.ts). */
 export async function playAnnouncement(a: KAnnouncement, lang: string): Promise<void> {
@@ -110,7 +123,7 @@ export async function playAnnouncement(a: KAnnouncement, lang: string): Promise<
     if (err instanceof DOMException && err.name === 'NotAllowedError') throw err
     // A missing chime must never silence the instruction itself.
   }
-  const url = pick(a.audio, lang)
+  const url = pick(a.audio, lang) || await fetchClip(a, lang)
   if (url) {
     try {
       await playUrl(await audioUrl(url))
