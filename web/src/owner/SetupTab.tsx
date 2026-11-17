@@ -1,19 +1,63 @@
-import { useQueryClient } from '@tanstack/react-query'
-import { useState, type FormEvent } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useState, type FormEvent, type ReactNode } from 'react'
 import { api } from '../api/client'
 import { useBlocks, useCrops, useSources, useTanks } from '../api/hooks'
 import type { Farm } from '../api/types'
 import { pick } from '../i18n'
 
-const input = 'mt-1 w-full rounded-xl border border-line bg-salt px-3 py-2'
+interface DeviceRow {
+  id: string
+  name: string
+  kind: string
+  key_prefix: string
+  created_at: string
+  last_seen_at: string | null
+}
+
+const fmt = (n: number) => n.toLocaleString('en-US')
 
 export function SetupTab({ farm }: { farm: Farm }) {
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      <SettingsForm farm={farm} />
-      <Devices farm={farm} />
-      <Lists farm={farm} />
+    <div className="grid gap-5">
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+        <SettingsForm farm={farm} />
+        <Devices farm={farm} />
+      </div>
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <Sources farm={farm} />
+        <Tanks farm={farm} />
+      </div>
+      <Blocks farm={farm} />
     </div>
+  )
+}
+
+/** One card: a title, a line saying what it is for, an optional action, then the content. */
+function Card({ title, hint, action, children }: { title: string; hint?: string; action?: ReactNode; children: ReactNode }) {
+  return (
+    <section className="rounded-3xl bg-panel p-6 ring-1 ring-line">
+      <header className="mb-5 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 className="text-base font-semibold">{title}</h3>
+          {hint && <p className="mt-0.5 text-sm text-ink-soft">{hint}</p>}
+        </div>
+        {action}
+      </header>
+      {children}
+    </section>
+  )
+}
+
+function Field({ label, hint, unit, children }: { label: string; hint: string; unit?: string; children: ReactNode }) {
+  return (
+    <label className="grid content-start gap-1.5">
+      <span className="text-sm font-medium">{label}</span>
+      <span className="relative block">
+        {children}
+        {unit && <span className="pointer-events-none absolute inset-y-0 end-3 grid place-items-center text-sm text-ink-soft">{unit}</span>}
+      </span>
+      <span className="text-xs text-ink-soft">{hint}</span>
+    </label>
   )
 }
 
@@ -22,96 +66,196 @@ function SettingsForm({ farm }: { farm: Farm }) {
   const s = farm.settings
   const [form, setForm] = useState({ earliest_start: s.earliest_start, briefing_time: s.briefing_time, lr_cap: String(s.lr_cap),
     heat_c: String(s.heat_c), tank_low_pct: String(s.tank_low_pct), flush_extra_mm: String(s.flush_extra_mm) })
-  const [msg, setMsg] = useState('')
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  const [busy, setBusy] = useState(false)
   async function submit(e: FormEvent) {
     e.preventDefault()
+    setBusy(true)
+    setMsg(null)
     try {
       await api(`/api/v1/farms/${farm.id}`, { method: 'PATCH', json: { settings: {
         earliest_start: form.earliest_start, briefing_time: form.briefing_time, lr_cap: Number(form.lr_cap),
         heat_c: Number(form.heat_c), tank_low_pct: Number(form.tank_low_pct), flush_extra_mm: Number(form.flush_extra_mm) } } })
-      setMsg('Saved. Today’s plan will be recomputed.')
+      setMsg({ ok: true, text: 'Saved. Today’s plan will be recomputed.' })
       await qc.invalidateQueries({ queryKey: ['farm', farm.id] })
-    } catch (err) { setMsg((err as Error).message) }
+    } catch (err) {
+      setMsg({ ok: false, text: (err as Error).message })
+    } finally {
+      setBusy(false)
+    }
   }
-  const f = (k: keyof typeof form, label: string, type = 'text') => (
-    <label className="text-sm">{label}<input type={type} className={`${input} num`} value={form[k]} onChange={(e) => setForm({ ...form, [k]: e.target.value })} /></label>
+  const input = (k: keyof typeof form, type: string, extra: Record<string, string> = {}, padEnd = false) => (
+    <input type={type} required className={`num h-10 w-full px-3 ${padEnd ? 'pe-12' : ''}`} value={form[k]} {...extra}
+      onChange={(e) => setForm({ ...form, [k]: e.target.value })} />
   )
   return (
-    <form onSubmit={submit} className="grid gap-3 rounded-3xl bg-panel p-5 ring-1 ring-line">
-      <h3 className="text-lg font-bold">Farm rules</h3>
-      <div className="grid grid-cols-2 gap-3">
-        {f('earliest_start', 'Workers start (HH:MM)', 'time')}
-        {f('briefing_time', 'Morning briefing (HH:MM)', 'time')}
-        {f('lr_cap', 'Max extra water for salt (0–0.9)')}
-        {f('flush_extra_mm', 'Flush day extra (mm)')}
-        {f('heat_c', 'Heat warning at (°C)')}
-        {f('tank_low_pct', 'Tank low below (%)')}
+    <form onSubmit={submit} className="rounded-3xl bg-panel p-6 ring-1 ring-line">
+      <header className="mb-5">
+        <h3 className="text-base font-semibold">Farm rules</h3>
+        <p className="mt-0.5 text-sm text-ink-soft">How Milh plans the day on this farm.</p>
+      </header>
+      <div className="grid gap-x-5 gap-y-5 sm:grid-cols-2">
+        <Field label="Workers start" hint="No watering is planned before this.">{input('earliest_start', 'time')}</Field>
+        <Field label="Morning briefing" hint="When the tablet reads out the day.">{input('briefing_time', 'time')}</Field>
+        <Field label="Max extra water for salt" hint="0.3 means up to 30% extra to wash salt out.">
+          {input('lr_cap', 'number', { min: '0', max: '0.9', step: '0.05' })}
+        </Field>
+        <Field label="Flush day extra" unit="mm" hint="Added once on a salt-flush day.">
+          {input('flush_extra_mm', 'number', { min: '0', step: '1' }, true)}
+        </Field>
+        <Field label="Heat warning at" unit="°C" hint="Announces the midday break above this.">
+          {input('heat_c', 'number', { min: '30', max: '60', step: '1' }, true)}
+        </Field>
+        <Field label="Tank low below" unit="%" hint="Raises an alert under this level.">
+          {input('tank_low_pct', 'number', { min: '0', max: '100', step: '1' }, true)}
+        </Field>
       </div>
-      {msg && <p className="text-sm font-semibold">{msg}</p>}
-      <button className="justify-self-start rounded-xl bg-ink px-4 py-2.5 font-semibold text-salt">Save rules</button>
+      <footer className="mt-6 flex flex-wrap items-center justify-end gap-3 border-t hairline pt-5">
+        {msg && <p role="status" className={`me-auto text-sm ${msg.ok ? 'text-palm' : 'text-brine'}`}>{msg.text}</p>}
+        <button className="btn btn-primary" disabled={busy}>{busy ? 'Saving…' : 'Save rules'}</button>
+      </footer>
     </form>
   )
 }
 
 function Devices({ farm }: { farm: Farm }) {
+  const qc = useQueryClient()
+  const list = useQuery({ queryKey: ['devices', farm.id], queryFn: () => api<DeviceRow[]>(`/api/v1/farms/${farm.id}/devices`) })
   const [kind, setKind] = useState<'kiosk' | 'sensor'>('kiosk')
   const [key, setKey] = useState('')
   const [msg, setMsg] = useState('')
+  const [copied, setCopied] = useState(false)
   async function create() {
+    setMsg('')
+    setCopied(false)
     try {
       const d = await api<{ api_key: string }>(`/api/v1/farms/${farm.id}/devices`, { method: 'POST', json: { name: kind === 'kiosk' ? 'Farm tablet' : 'Sensor', kind } })
       setKey(d.api_key)
+      await qc.invalidateQueries({ queryKey: ['devices', farm.id] })
     } catch (err) { setMsg((err as Error).message) }
   }
+  async function copy() {
+    try { await navigator.clipboard.writeText(key); setCopied(true) } catch { setCopied(false) }
+  }
+  const rows = list.data ?? []
   return (
-    <section className="grid gap-3 rounded-3xl bg-panel p-5 ring-1 ring-line">
-      <h3 className="text-lg font-bold">Tablets and sensors</h3>
-      <p className="text-sm text-ink-soft">A farm tablet signs in with this key plus a worker's PIN. Sensors send readings with it to <code className="num">POST /api/v1/readings</code> (header <code>X-Api-Key</code>).</p>
-      <div className="flex items-center gap-2">
-        <select className="h-9 px-3" value={kind} onChange={(e) => setKind(e.target.value as 'kiosk' | 'sensor')}>
-          <option value="kiosk">Farm tablet</option><option value="sensor">Sensor</option>
+    <Card title="Tablets and sensors"
+      hint="A farm tablet signs in with its key plus a worker's PIN. Sensors send readings with theirs.">
+      <div className="flex flex-wrap items-center gap-2">
+        <select aria-label="Device type" className="h-9 px-3" value={kind} onChange={(e) => setKind(e.target.value as 'kiosk' | 'sensor')}>
+          <option value="kiosk">Farm tablet</option>
+          <option value="sensor">Sensor</option>
         </select>
-        <button onClick={create} className="btn btn-primary">Create key</button>
+        <button type="button" onClick={create} className="btn btn-primary">Create key</button>
       </div>
-      {key && <p className="rounded-xl bg-dune/10 p-3 text-sm">Copy this key now; it is shown only once:<br /><code className="num break-all text-base">{key}</code></p>}
-      {msg && <p className="text-brine">{msg}</p>}
-    </section>
+      {key && (
+        <div className="mt-4 rounded-xl border border-dune/30 bg-dune/5 p-4">
+          <p className="text-sm font-medium">Copy this key now. It is shown only once.</p>
+          <div className="mt-2 flex items-center gap-2">
+            <code className="mono min-w-0 flex-1 truncate rounded-lg bg-panel px-3 py-2 text-sm ring-1 ring-line">{key}</code>
+            <button type="button" onClick={copy} className="btn btn-secondary">{copied ? 'Copied' : 'Copy'}</button>
+          </div>
+        </div>
+      )}
+      {msg && <p className="mt-3 text-sm text-brine">{msg}</p>}
+      <div className="mt-5">
+        {rows.length === 0 ? (
+          <p className="rounded-xl border border-dashed border-line px-4 py-6 text-center text-sm text-ink-soft">
+            No tablets or sensors yet. Create a key for the farm tablet first.
+          </p>
+        ) : (
+          <table className="data-table w-full text-sm">
+            <thead><tr><th>Name</th><th>Type</th><th>Key starts</th><th className="text-end">Added</th><th className="text-end">Last seen</th></tr></thead>
+            <tbody>
+              {rows.map((d) => (
+                <tr key={d.id}>
+                  <td className="font-medium">{d.name}</td>
+                  <td><span className={`chip ${d.kind === 'kiosk' ? 'chip-green' : 'chip-blue'}`}>{d.kind === 'kiosk' ? 'Tablet' : 'Sensor'}</span></td>
+                  <td className="mono text-ink-soft">{d.key_prefix}…</td>
+                  <td className="num text-end">{new Date(d.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</td>
+                  <td className="num text-end text-ink-soft">{d.last_seen_at ? new Date(d.last_seen_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : 'never'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+      <p className="mt-4 text-xs text-ink-soft">Sensors post to <code className="mono">/api/v1/readings</code> with the header <code className="mono">X-Api-Key</code>.</p>
+    </Card>
   )
 }
 
-function Lists({ farm }: { farm: Farm }) {
+function Sources({ farm }: { farm: Farm }) {
   const sources = useSources(farm.id)
-  const blocks = useBlocks(farm.id)
-  const tanks = useTanks(farm.id)
-  const crops = useCrops()
   return (
-    <section className="grid gap-4 rounded-3xl bg-panel p-5 ring-1 ring-line lg:col-span-2">
-      <div>
-        <h3 className="text-lg font-bold">Water sources</h3>
-        <table className="mt-1 w-full text-sm"><tbody>
-          {sources.data?.map((s) => (
-            <tr key={s.id} className="border-t border-line"><td className="py-1.5"><span className="me-2 inline-block size-3 rounded-full" style={{ background: s.tap_color }} />{s.name}</td>
-              <td>{pick(s.tap_label, 'en')}</td><td className="num">{s.cost_per_m3} AED/m³</td>
-              <td className="text-ink-soft">{s.declared_ec != null ? `declared EC ${s.declared_ec}` : 'no declared EC'}</td></tr>
+    <Card title="Water sources" hint="Where the farm's water comes from, the tap the workers see, and what it costs.">
+      <div className="overflow-x-auto">
+        <table className="data-table w-full min-w-[34rem] text-sm">
+          <thead><tr><th>Source</th><th>Tap on the tablet</th><th className="text-end">Cost</th><th className="text-end">Declared salt (EC)</th></tr></thead>
+          <tbody>
+            {sources.data?.map((s) => (
+              <tr key={s.id}>
+                <td className="font-medium"><span className="me-2.5 inline-block size-2.5 rounded-full align-middle" style={{ background: s.tap_color }} />{s.name}</td>
+                <td>{pick(s.tap_label, 'en')}</td>
+                <td className="num text-end">{s.cost_per_m3} <span className="text-ink-soft">AED/m³</span></td>
+                <td className="num text-end">{s.declared_ec != null ? <>{s.declared_ec} <span className="text-ink-soft">dS/m</span></> : <span className="text-ink-soft">not declared</span>}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Card>
+  )
+}
+
+function Blocks({ farm }: { farm: Farm }) {
+  const blocks = useBlocks(farm.id)
+  const crops = useCrops()
+  const cropOf = (key: string) => crops.data?.find((c) => c.key === key)
+  const used = [...new Set((blocks.data ?? []).map((b) => b.crop_key))].map(cropOf).filter((c) => c?.citation)
+  return (
+    <Card title="Blocks" hint="Each block's crop, size and drip system, and how long it used to be watered.">
+      <div className="overflow-x-auto">
+        <table className="data-table w-full min-w-[40rem] text-sm">
+          <thead><tr><th>Block</th><th>Crop</th><th className="text-end">Area</th><th className="text-end">Drip flow</th><th className="text-end">Usual watering</th><th className="text-end">Planted</th></tr></thead>
+          <tbody>
+            {blocks.data?.map((b) => (
+              <tr key={b.id}>
+                <td className="font-medium">{b.name}</td>
+                <td>{pick(cropOf(b.crop_key)?.names, 'en') || b.crop_key}</td>
+                <td className="num text-end">{fmt(b.area_m2)} <span className="text-ink-soft">m²</span></td>
+                <td className="num text-end">{fmt(b.flow_l_per_h)} <span className="text-ink-soft">L/h</span></td>
+                <td className="num text-end">{b.habit_minutes} <span className="text-ink-soft">min</span></td>
+                <td className="num text-end text-ink-soft">{b.planting_date ?? '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {used.length > 0 && (
+        <details className="mt-4 text-xs text-ink-soft">
+          <summary className="cursor-pointer select-none font-medium">Where the crop values come from</summary>
+          <ul className="mt-2 grid gap-1">
+            {used.map((c) => <li key={c!.key}><span className="font-medium text-ink">{pick(c!.names, 'en')}:</span> {c!.citation}</li>)}
+          </ul>
+        </details>
+      )}
+    </Card>
+  )
+}
+
+function Tanks({ farm }: { farm: Farm }) {
+  const tanks = useTanks(farm.id)
+  return (
+    <Card title="Tanks" hint="Storage the workers read the level of.">
+      <table className="data-table w-full text-sm">
+        <thead><tr><th>Tank</th><th className="text-end">Capacity</th></tr></thead>
+        <tbody>
+          {tanks.data?.map((t) => (
+            <tr key={t.id}><td className="font-medium">{t.name}</td><td className="num text-end">{fmt(t.capacity_l)} <span className="text-ink-soft">L</span></td></tr>
           ))}
-        </tbody></table>
-      </div>
-      <div>
-        <h3 className="text-lg font-bold">Blocks</h3>
-        <table className="mt-1 w-full text-sm"><tbody>
-          {blocks.data?.map((b) => (
-            <tr key={b.id} className="border-t border-line"><td className="py-1.5 font-semibold">{b.name}</td>
-              <td>{pick(crops.data?.find((c) => c.key === b.crop_key)?.names, 'en') || b.crop_key}</td>
-              <td className="num">{b.area_m2} m²</td><td className="num">{b.flow_l_per_h} L/h</td>
-              <td className="num">usual {b.habit_minutes} min</td><td className="text-ink-soft">planted {b.planting_date}</td></tr>
-          ))}
-        </tbody></table>
-      </div>
-      <div>
-        <h3 className="text-lg font-bold">Tanks</h3>
-        <ul className="text-sm">{tanks.data?.map((t) => <li key={t.id}>{t.name} · <span className="num">{t.capacity_l} L</span></li>)}</ul>
-      </div>
-      <p className="text-xs text-ink-soft">Crop values: {crops.data?.[0]?.citation}</p>
-    </section>
+        </tbody>
+      </table>
+    </Card>
   )
 }

@@ -78,6 +78,16 @@ class DeviceCreated(BaseModel):
     api_key: str
 
 
+class DeviceOut(BaseModel):
+    """A tablet or sensor key as listed to the owner: never the key itself, only its first characters."""
+    id: uuid.UUID
+    name: str
+    kind: str
+    key_prefix: str
+    created_at: datetime
+    last_seen_at: datetime | None
+
+
 @router.post("/auth/login", response_model=TokenOut)
 def login(body: LoginIn, session: Annotated[Session, Depends(get_session)]) -> TokenOut:
     user = session.scalars(select(User).where(User.email == body.email.strip().lower())).first()
@@ -127,3 +137,15 @@ def create_device(
     session.add(dev)
     session.commit()
     return DeviceCreated(id=dev.id, name=dev.name, kind=dev.kind, api_key=key)
+
+
+@router.get("/farms/{farm_id}/devices", response_model=list[DeviceOut])
+def list_devices(
+    farm_id: uuid.UUID,
+    p: Annotated[Principal, Depends(require_role("owner", "admin"))],
+    session: Annotated[Session, Depends(get_session)],
+) -> list[DeviceOut]:
+    owned_farm(session, p, farm_id)
+    devs = session.scalars(select(Device).where(Device.farm_id == farm_id).order_by(Device.created_at.desc()))
+    return [DeviceOut(id=d.id, name=d.name, kind=d.kind, key_prefix=d.key_prefix, created_at=d.created_at,
+                      last_seen_at=d.last_seen_at) for d in devs]

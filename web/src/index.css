@@ -374,6 +374,16 @@ html[lang="ur"] .kiosk-start {
   padding: 0.5rem 0;
   border-top: 1px solid var(--k-line);
 }
+/* Number columns: heading and figures line up on the right; cells get a little air between columns. */
+.data-table :is(th, td).text-end {
+  text-align: end;
+}
+.data-table :is(th, td) + :is(th, td) {
+  padding-inline-start: 1rem;
+}
+.data-table td {
+  vertical-align: middle;
+}
 
 /* Cards and rows arrive once, one after another. */
 @keyframes card-in {
