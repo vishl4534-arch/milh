@@ -113,7 +113,8 @@ def generate_missing_audio(session: Session, tts: TtsClient | None, media_dir: P
 @lru_cache
 def get_tts() -> ElevenLabsTts | None:
     s = get_settings()
-    if not s.elevenlabs_api_key or not any(s.elevenlabs_voice_ids.values()):
+    voices = {**s.elevenlabs_voice_ids, **{k: v for k, v in s.elevenlabs_announce_voice_ids.items() if v}}
+    if not s.elevenlabs_api_key or not any(voices.values()):
         return None
-    return ElevenLabsTts(s.elevenlabs_api_key, s.elevenlabs_model_id, s.elevenlabs_voice_ids,
+    return ElevenLabsTts(s.elevenlabs_api_key, s.elevenlabs_model_id, voices,
                          httpx.Client(headers={"User-Agent": "milh-farm-platform/0.1"}))

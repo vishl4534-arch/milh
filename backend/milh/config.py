@@ -19,6 +19,11 @@ class Settings(BaseSettings):
     elevenlabs_api_key: str | None = None
     elevenlabs_model_id: str = "eleven_v4_turbo"  # speaks Urdu; multilingual_v2 does not
     elevenlabs_voice_ids: dict[str, str] = {}
+    # The announcer (scheduled announcements and the tablet's speaker buttons): a male voice, apart from the
+    # assistant's. Amjid, an Urdu documentary narrator from the ElevenLabs voice library, chosen because
+    # speech-to-text understood his Urdu best ("sabz nal") and his English is clear. Empty values fall back
+    # to ELEVENLABS_VOICE_IDS.
+    elevenlabs_announce_voice_ids: dict[str, str] = {"en": "vH5LP38dcYJ3CIbC2rKX", "ur": "vH5LP38dcYJ3CIbC2rKX"}
     gemini_api_key: str | None = None
     gemini_model: str = "gemini-3.5-flash-lite"  # 2.5-flash is retired for new accounts
     media_dir: Path = Path("./media")
