@@ -22,6 +22,47 @@ Design: [docs/2026-11-16-milh-platform-design.md](docs/2026-11-16-milh-platform-
 Build plan: [docs/superpowers/plans/2026-11-16-milh-platform.md](docs/superpowers/plans/2026-11-16-milh-platform.md) ·
 Demo: [docs/demo-script.md](docs/demo-script.md)
 
+**For judges:** both sign-in pages list demo accounts. Pick one and press Sign in. Owner: Aisha (farm owner) or
+Platform admin. Farm tablet: Imran (Urdu) or Ravi (English). **Data:** weather is live (Open-Meteo); well and
+soil salinity history is from peer-reviewed Al-Batinah studies; the farm layout is an example; today's well
+reading is a labelled stand-in.
+
+## Why this angle
+
+Most entries ask *how much water does the crop need*. Milh goes after three problems inside that one:
+1. **Desert wells are salty.** Salt builds up around the roots, so growers over-water "just in case". Milh
+   calculates exactly how much extra water flushes the salt (FAO-29) and blends in clean water only where needed.
+2. **The person who decides is not the person at the valve.** The owner's habit reaches a worker who may not read.
+   Milh speaks each day's instruction on a farm tablet in the worker's language, with one Done button.
+3. **Salt is noticed only after the harvest fails.** The salt clock warns from the well's salinity trend.
+
+On the example farm Milh pumps about **30,000 L/day less from the well (−55%)** with no yield lost to salt,
+for the cost of a tablet and a ~AED 50 salinity meter.
+
+## Screenshots
+
+### Owner dashboard (phone or laptop)
+
+| Today: outcome | Plan for every block |
+|---|---|
+| ![Today](docs/screenshots/today.png) | ![Plan](docs/screenshots/plan.png) |
+| **How each block was decided** | **Add data** |
+| ![Decision](docs/screenshots/decision.png) | ![Add data](docs/screenshots/data.png) |
+| **Salt clock** | **Water report** |
+| ![Salt clock](docs/screenshots/salt.png) | ![Water report](docs/screenshots/reports.png) |
+| **Setup** | **Sign-in with demo accounts** |
+| ![Setup](docs/screenshots/setup.png) | ![Sign in](docs/screenshots/login.png) |
+
+### Farm tablet (worker)
+
+| Start of the day | Today's job |
+|---|---|
+| ![Start](docs/screenshots/kiosk_start.png) | ![Today](docs/screenshots/kiosk_today.png) |
+| **Water** | **Soil** |
+| ![Water](docs/screenshots/kiosk_water.png) | ![Soil](docs/screenshots/kiosk_soil.png) |
+| **In Urdu** | **Tablet sign-in with demo workers** |
+| ![Urdu](docs/screenshots/kiosk_urdu.png) | ![Tablet sign-in](docs/screenshots/kiosk_login.png) |
+
 ## Run it on a laptop (no Docker)
 
 Needs Python 3.12+ and Node 20+.

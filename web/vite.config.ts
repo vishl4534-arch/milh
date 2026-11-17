@@ -9,6 +9,8 @@ const proxy = {
   '/api': 'http://localhost:8000',
   '/media': 'http://localhost:8000',
 }
+// Public demo link through a Cloudflare quick tunnel (or ngrok): let those hostnames reach the server.
+const allowedHosts = ['.trycloudflare.com', '.ngrok-free.app', '.ngrok.app']
 
 // `--mode tablet` serves over HTTPS to the whole Wi-Fi network, so a real tablet can use the microphone,
 // work offline and be installed (browsers allow those only on HTTPS or on the machine itself).
@@ -45,10 +47,12 @@ export default defineConfig(({ mode }) => ({
   ],
   server: {
     proxy,
+    allowedHosts,
     host: mode === 'tablet' ? true : undefined,
   },
   preview: {
     proxy,
+    allowedHosts,
     host: mode === 'tablet' ? true : undefined,
   },
   test: {
