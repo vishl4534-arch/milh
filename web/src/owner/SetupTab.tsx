@@ -1,9 +1,12 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState, type FormEvent, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { api } from '../api/client'
-import { useBlocks, useCrops, useSources, useTanks } from '../api/hooks'
+import { useBlocks, useCrops, useKioskBundle, useSources, useTanks } from '../api/hooks'
 import type { Farm } from '../api/types'
 import { pick } from '../i18n'
+import { TankArt } from '../kiosk/art/Tank'
+import { ageText, hoursSince } from '../lib/format'
 
 interface DeviceRow {
   id: string
@@ -19,11 +22,11 @@ const fmt = (n: number) => n.toLocaleString('en-US')
 export function SetupTab({ farm }: { farm: Farm }) {
   return (
     <div className="grid gap-5">
-      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
         <SettingsForm farm={farm} />
         <Devices farm={farm} />
       </div>
-      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <Sources farm={farm} />
         <Tanks farm={farm} />
       </div>
@@ -35,7 +38,7 @@ export function SetupTab({ farm }: { farm: Farm }) {
 /** One card: a title, a line saying what it is for, an optional action, then the content. */
 function Card({ title, hint, action, children }: { title: string; hint?: string; action?: ReactNode; children: ReactNode }) {
   return (
-    <section className="rounded-3xl bg-panel p-6 ring-1 ring-line">
+    <section className="flex h-full flex-col rounded-3xl bg-panel p-6 ring-1 ring-line">
       <header className="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="text-base font-semibold">{title}</h3>
@@ -43,7 +46,7 @@ function Card({ title, hint, action, children }: { title: string; hint?: string;
         </div>
         {action}
       </header>
-      {children}
+      <div className="flex flex-1 flex-col">{children}</div>
     </section>
   )
 }
@@ -85,16 +88,16 @@ function SettingsForm({ farm }: { farm: Farm }) {
     }
   }
   const input = (k: keyof typeof form, type: string, extra: Record<string, string> = {}, padEnd = false) => (
-    <input type={type} required className={`num h-10 w-full px-3 ${padEnd ? 'pe-12' : ''}`} value={form[k]} {...extra}
+    <input type={type} required className={`num no-spin h-10 w-full px-3 ${padEnd ? 'pe-12' : ''}`} value={form[k]} {...extra}
       onChange={(e) => setForm({ ...form, [k]: e.target.value })} />
   )
   return (
-    <form onSubmit={submit} className="rounded-3xl bg-panel p-6 ring-1 ring-line">
+    <form onSubmit={submit} className="flex h-full flex-col rounded-3xl bg-panel p-6 ring-1 ring-line">
       <header className="mb-5">
         <h3 className="text-base font-semibold">Farm rules</h3>
         <p className="mt-0.5 text-sm text-ink-soft">How Milh plans the day on this farm.</p>
       </header>
-      <div className="grid gap-x-5 gap-y-5 sm:grid-cols-2">
+      <div className="mb-6 grid gap-x-5 gap-y-5 sm:grid-cols-2">
         <Field label="Workers start" hint="No watering is planned before this.">{input('earliest_start', 'time')}</Field>
         <Field label="Morning briefing" hint="When the tablet reads out the day.">{input('briefing_time', 'time')}</Field>
         <Field label="Max extra water for salt" hint="0.3 means up to 30% extra to wash salt out.">
@@ -110,7 +113,7 @@ function SettingsForm({ farm }: { farm: Farm }) {
           {input('tank_low_pct', 'number', { min: '0', max: '100', step: '1' }, true)}
         </Field>
       </div>
-      <footer className="mt-6 flex flex-wrap items-center justify-end gap-3 border-t hairline pt-5">
+      <footer className="mt-auto flex flex-wrap items-center justify-end gap-3 border-t hairline pt-5">
         {msg && <p role="status" className={`me-auto text-sm ${msg.ok ? 'text-palm' : 'text-brine'}`}>{msg.text}</p>}
         <button className="btn btn-primary" disabled={busy}>{busy ? 'Saving…' : 'Save rules'}</button>
       </footer>
@@ -180,7 +183,22 @@ function Devices({ farm }: { farm: Farm }) {
           </table>
         )}
       </div>
-      <p className="mt-4 text-xs text-ink-soft">Sensors post to <code className="mono">/api/v1/readings</code> with the header <code className="mono">X-Api-Key</code>.</p>
+      <div className="mt-5 rounded-xl bg-salt p-4">
+        <h4 className="eyebrow">Set up a farm tablet</h4>
+        <ol className="mt-3 grid gap-2.5 text-sm">
+          {[
+            <>Create a <span className="font-medium">Farm tablet</span> key above and copy it.</>,
+            <>On the tablet, open<code className="mono mt-1 block w-fit max-w-full overflow-x-auto whitespace-nowrap rounded bg-panel px-1.5 py-0.5 ring-1 ring-line">{window.location.origin}/kiosk/login</code></>,
+            <>Enter the key and a worker's PIN. The tablet remembers the key; each day the worker signs in with just their PIN.</>,
+          ].map((step, i) => (
+            <li key={i} className="flex gap-3">
+              <span className="num grid size-5 shrink-0 place-items-center rounded-full bg-palm text-[0.6875rem] font-semibold text-white">{i + 1}</span>
+              <span className="min-w-0">{step}</span>
+            </li>
+          ))}
+        </ol>
+      </div>
+      <p className="mt-auto pt-4 text-xs text-ink-soft">Sensors post to <code className="mono">/api/v1/readings</code> with the header <code className="mono">X-Api-Key</code>.</p>
     </Card>
   )
 }
@@ -204,6 +222,7 @@ function Sources({ farm }: { farm: Farm }) {
           </tbody>
         </table>
       </div>
+      <p className="mt-auto pt-4 text-xs text-ink-soft">Each morning Milh blends these taps to keep salt under every crop's limit at the lowest water cost.</p>
     </Card>
   )
 }
@@ -245,17 +264,49 @@ function Blocks({ farm }: { farm: Farm }) {
 }
 
 function Tanks({ farm }: { farm: Farm }) {
+  const { t } = useTranslation()
   const tanks = useTanks(farm.id)
+  const bundle = useKioskBundle(farm.id)
+  const [now] = useState(() => Date.now())
+  const low = farm.settings.tank_low_pct
   return (
     <Card title="Tanks" hint="Storage the workers read the level of.">
-      <table className="data-table w-full text-sm">
-        <thead><tr><th>Tank</th><th className="text-end">Capacity</th></tr></thead>
-        <tbody>
-          {tanks.data?.map((t) => (
-            <tr key={t.id}><td className="font-medium">{t.name}</td><td className="num text-end">{fmt(t.capacity_l)} <span className="text-ink-soft">L</span></td></tr>
-          ))}
-        </tbody>
-      </table>
+      <ul className="grid gap-4">
+        {tanks.data?.map((tk) => {
+          const live = bundle.data?.bundle.tanks.find((x) => x.id === tk.id)
+          const pct = live?.level_pct ?? null
+          const isLow = pct !== null && pct < low
+          return (
+            <li key={tk.id} className="flex items-center gap-4">
+              <TankArt pct={pct} className="h-20 w-16 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="font-medium">{tk.name}</span>
+                  <span className="num text-sm text-ink-soft">{fmt(tk.capacity_l)} L</span>
+                </div>
+                {pct === null ? (
+                  <p className="mt-1 text-sm text-ink-soft">No level reading yet.</p>
+                ) : (
+                  <>
+                    <div className="mt-1 flex items-baseline gap-2">
+                      <span className={`num text-2xl font-semibold ${isLow ? 'text-dune' : ''}`}>{Math.round(pct)}%</span>
+                      {live?.volume_l != null && <span className="num text-sm text-ink-soft">{fmt(Math.round(live.volume_l))} L</span>}
+                    </div>
+                    <div className="relative mt-2 h-2 rounded-full bg-salt">
+                      <div className={`h-full rounded-full ${isLow ? 'bg-dune' : 'bg-water'}`} style={{ width: `${Math.min(100, pct)}%` }} />
+                      <span aria-hidden title={`Low below ${low}%`} className="absolute -top-1 h-4 w-px bg-ink-soft/60" style={{ insetInlineStart: `${low}%` }} />
+                    </div>
+                    <p className="mt-1.5 text-xs text-ink-soft">
+                      {live?.measured_at ? `Read ${t('common.ago', { age: ageText(hoursSince(live.measured_at, now), t) })}` : 'Reading time unknown'} · low below {low}%
+                    </p>
+                  </>
+                )}
+              </div>
+            </li>
+          )
+        })}
+      </ul>
+      <p className="mt-auto pt-4 text-xs text-ink-soft">Workers add tank readings on the farm tablet; sensors can send them too.</p>
     </Card>
   )
 }

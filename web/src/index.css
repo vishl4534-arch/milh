@@ -375,6 +375,16 @@ html[lang="ur"] .kiosk-start {
   border-top: 1px solid var(--k-line);
 }
 /* Number columns: heading and figures line up on the right; cells get a little air between columns. */
+/* Number boxes that show a unit inside them: no spinner arrows on top of the unit. */
+.no-spin::-webkit-inner-spin-button,
+.no-spin::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.no-spin {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
 .data-table :is(th, td).text-end {
   text-align: end;
 }
