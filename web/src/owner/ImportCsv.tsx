@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { api } from '../api/client'
 import type { ImportPreview } from '../api/types'
+import { Card, CardFooter, Field, FilePicker } from './ui'
 
 type Kind = 'readings' | 'soil_tests'
 
@@ -12,13 +13,13 @@ export function ImportCsv({ farmId, onImported }: { farmId: string; onImported?:
   const [file, setFile] = useState<File | null>(null)
   const [published, setPublished] = useState(true)
   const [preview, setPreview] = useState<ImportPreview | null>(null)
-  const [message, setMessage] = useState('')
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null)
   const [busy, setBusy] = useState(false)
 
   async function send(dryRun: boolean) {
     if (!file) return
     setBusy(true)
-    setMessage('')
+    setMessage(null)
     const form = new FormData()
     form.append('file', file)
     try {
@@ -28,11 +29,11 @@ export function ImportCsv({ farmId, onImported }: { farmId: string; onImported?:
       )
       setPreview(p)
       if (!dryRun) {
-        setMessage(`Imported ${count(p.created, 'row', 'rows')}${p.duplicates ? ` (${p.duplicates} already there)` : ''}.`)
+        setMessage({ ok: true, text: `Imported ${count(p.created, 'row', 'rows')}${p.duplicates ? ` (${p.duplicates} already there)` : ''}.` })
         onImported?.()
       }
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : String(err))
+      setMessage({ ok: false, text: err instanceof Error ? err.message : String(err) })
     } finally {
       setBusy(false)
     }
@@ -40,54 +41,47 @@ export function ImportCsv({ farmId, onImported }: { farmId: string; onImported?:
 
   const clean = preview !== null && preview.errors.length === 0 && preview.rows_ok > 0
   return (
-    <section className="rounded-3xl bg-panel p-5 ring-1 ring-line">
-      <h3 className="text-lg font-bold">Import from a spreadsheet (CSV)</h3>
-      <p className="text-sm text-ink-soft">
-        Download a template:{' '}
-        <a className="underline" href="/templates/readings_template.csv" download>readings</a> ·{' '}
-        <a className="underline" href="/templates/soil_tests_template.csv" download>soil tests</a>
-      </p>
-      <div className="mt-3 flex flex-wrap items-end gap-3">
-        <label className="text-sm">What is in the file
-          <select className="mt-1 block rounded-xl border border-line bg-salt px-3 py-2" value={kind}
-            onChange={(e) => { setKind(e.target.value as Kind); setPreview(null) }}>
+    <Card title="Import from a spreadsheet (CSV)"
+      hint={<>Start from a template: <a className="font-medium text-palm underline-offset-4 hover:underline" href="/templates/readings_template.csv" download>readings</a>
+        {' · '}<a className="font-medium text-palm underline-offset-4 hover:underline" href="/templates/soil_tests_template.csv" download>soil tests</a></>}>
+      <div className="mb-6 grid gap-5">
+        <Field label="What is in the file">
+          <select className="h-10 w-full px-3" value={kind} onChange={(e) => { setKind(e.target.value as Kind); setPreview(null) }}>
             <option value="readings">Readings (water salt, tank, flow…)</option>
             <option value="soil_tests">Soil tests</option>
           </select>
+        </Field>
+        <FilePicker label="CSV file" accept=".csv,text/csv" file={file} hint="A .csv file saved from Excel or Sheets"
+          onFile={(f) => { setFile(f); setPreview(null); setMessage(null) }} />
+        <label className="flex items-start gap-3 text-sm">
+          <input type="checkbox" className="mt-0.5 size-4 accent-[var(--color-palm)]" checked={published} onChange={(e) => setPublished(e.target.checked)} />
+          <span><span className="font-medium">Published data</span><span className="block text-xs text-ink-soft">Every row needs a citation in the “note” column.</span></span>
         </label>
-        <label className="text-sm">CSV file
-          <input className="mt-1 block" type="file" accept=".csv,text/csv"
-            onChange={(e) => { setFile(e.target.files?.[0] ?? null); setPreview(null) }} />
-        </label>
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={published} onChange={(e) => setPublished(e.target.checked)} />
-          Published data (every row needs a citation in “note”)
-        </label>
+        {preview && (
+          <div className="rounded-xl bg-salt p-4">
+            <div className="flex flex-wrap gap-2 text-sm">
+              <span className="chip chip-green">{count(preview.rows_ok, 'row', 'rows')} ready</span>
+              <span className={`chip ${preview.errors.length ? 'chip-red' : 'chip-neutral'}`}>{count(preview.errors.length, 'problem', 'problems')}</span>
+            </div>
+            {preview.errors.length > 0 && (
+              <table className="data-table mt-3 w-full text-sm">
+                <thead><tr><th>Row</th><th>Column</th><th>Problem</th></tr></thead>
+                <tbody>
+                  {preview.errors.map((er, i) => (
+                    <tr key={i}><td className="num">{er.row}</td><td className="mono text-xs">{er.column}</td><td className="text-brine">{er.message}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
       </div>
-      <div className="mt-3 flex gap-2">
-        <button type="button" disabled={!file || busy} onClick={() => send(true)}
-          className="rounded-xl bg-salt px-4 py-2 font-semibold ring-1 ring-line disabled:opacity-40">Check file</button>
-        <button type="button" disabled={!clean || busy} onClick={() => send(false)}
-          className="rounded-xl bg-ink px-4 py-2 font-semibold text-salt disabled:opacity-40">
+      <CardFooter message={message?.text} ok={message?.ok}>
+        <button type="button" disabled={!file || busy} onClick={() => send(true)} className="btn btn-secondary">Check file</button>
+        <button type="button" disabled={!clean || busy} onClick={() => send(false)} className="btn btn-primary">
           {preview ? `Import ${count(preview.rows_ok, 'row', 'rows')}` : 'Import rows'}
         </button>
-      </div>
-      {preview && (
-        <div className="mt-3 text-sm">
-          <p><span className="num">{preview.rows_ok}</span> {preview.rows_ok === 1 ? 'row' : 'rows'} ready · <span className="num">{preview.errors.length}</span> {preview.errors.length === 1 ? 'problem' : 'problems'}</p>
-          {preview.errors.length > 0 && (
-            <table className="mt-2 w-full">
-              <thead><tr className="text-start text-ink-soft"><th className="text-start">Row</th><th className="text-start">Column</th><th className="text-start">Problem</th></tr></thead>
-              <tbody>
-                {preview.errors.map((er, i) => (
-                  <tr key={i} className="border-t border-line"><td className="num py-1">{er.row}</td><td>{er.column}</td><td className="text-brine">{er.message}</td></tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      )}
-      {message && <p className="mt-2 text-sm font-semibold">{message}</p>}
-    </section>
+      </CardFooter>
+    </Card>
   )
 }

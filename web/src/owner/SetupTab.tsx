@@ -1,11 +1,12 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState, type FormEvent, type ReactNode } from 'react'
+import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { api } from '../api/client'
 import { useBlocks, useCrops, useKioskBundle, useSources, useTanks } from '../api/hooks'
 import type { Farm } from '../api/types'
 import { pick } from '../i18n'
 import { TankArt } from '../kiosk/art/Tank'
+import { Card, Field } from './ui'
 import { ageText, hoursSince } from '../lib/format'
 
 interface DeviceRow {
@@ -32,35 +33,6 @@ export function SetupTab({ farm }: { farm: Farm }) {
       </div>
       <Blocks farm={farm} />
     </div>
-  )
-}
-
-/** One card: a title, a line saying what it is for, an optional action, then the content. */
-function Card({ title, hint, action, children }: { title: string; hint?: string; action?: ReactNode; children: ReactNode }) {
-  return (
-    <section className="flex h-full flex-col rounded-3xl bg-panel p-6 ring-1 ring-line">
-      <header className="mb-5 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h3 className="text-base font-semibold">{title}</h3>
-          {hint && <p className="mt-0.5 text-sm text-ink-soft">{hint}</p>}
-        </div>
-        {action}
-      </header>
-      <div className="flex flex-1 flex-col">{children}</div>
-    </section>
-  )
-}
-
-function Field({ label, hint, unit, children }: { label: string; hint: string; unit?: string; children: ReactNode }) {
-  return (
-    <label className="grid content-start gap-1.5">
-      <span className="text-sm font-medium">{label}</span>
-      <span className="relative block">
-        {children}
-        {unit && <span className="pointer-events-none absolute inset-y-0 end-3 grid place-items-center text-sm text-ink-soft">{unit}</span>}
-      </span>
-      <span className="text-xs text-ink-soft">{hint}</span>
-    </label>
   )
 }
 
