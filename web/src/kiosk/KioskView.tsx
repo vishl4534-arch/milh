@@ -521,18 +521,24 @@ function SoilTab({ blocks, lang, tz, today }: { blocks: KBlock[]; lang: Lang; tz
                     </div>
                   )}
                 </div>
-                <div className="relative pt-9">
-                  <span className="num absolute top-0 -translate-x-1/2 text-center text-sm leading-tight text-[var(--k-muted)] rtl:translate-x-1/2"
-                    style={{ insetInlineStart: `${100 / SCALE}%` }}>
-                    {t('kiosk.cropLimit')}<br />{b.salt_threshold.toFixed(1)} dS/m
-                  </span>
+                {/* The crop's limit: label and tick are one column, so the tick always starts below the label
+                    and runs through the bar, whatever the font size or language. */}
+                <div className="relative pb-1 pt-14">
                   <div className="relative h-4 overflow-hidden rounded-full bg-[var(--k-sand-soft)]">
+                    {/* Past the crop's limit: a faint red zone, so the limit reads without a heavy line */}
+                    <span aria-hidden className="absolute inset-y-0 end-0 bg-[var(--color-brine)]/10" style={{ width: `${100 - 100 / SCALE}%` }} />
                     {b.soil.ece !== null && b.soil.status !== 'none' && (
                       <div className="grow-x h-full rounded-full" style={{ width: `${Math.min(100, (b.soil.ece / (b.salt_threshold * SCALE)) * 100)}%`, background: color, animationDelay: `${200 + i * STAGGER_MS}ms` }} />
                     )}
                   </div>
-                  <span aria-hidden className="absolute bottom-[-6px] h-7 w-[3px] -translate-x-1/2 rounded-full bg-[var(--k-ink)]/80 rtl:translate-x-1/2"
-                    style={{ insetInlineStart: `${100 / SCALE}%` }} />
+                  <div className="absolute bottom-0 flex -translate-x-1/2 flex-col items-center rtl:translate-x-1/2"
+                    style={{ insetInlineStart: `${100 / SCALE}%` }}>
+                    <span className="num whitespace-nowrap text-center text-sm leading-tight text-[var(--k-muted)]">
+                      {t('kiosk.cropLimit')}<br /><b className="font-semibold text-[var(--k-ink)]">{b.salt_threshold.toFixed(1)} dS/m</b>
+                    </span>
+                    {/* A slim marker: 4px above the bar, through it, 4px below (pb-1 on the box) */}
+                    <span aria-hidden className="mt-1.5 h-6 w-0.5 rounded-full bg-[var(--k-ink)]/35" />
+                  </div>
                 </div>
               </div>
             </div>
