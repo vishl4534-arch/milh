@@ -5,7 +5,6 @@ import { useNavigate } from 'react-router-dom'
 import { api, ApiError, setToken } from '../api/client'
 import { useKioskBundle } from '../api/hooks'
 import type { KAnnouncement, KRun, Lang } from '../api/types'
-import { Speaker } from '../components/icons'
 import { savedLanguage, setLanguage } from '../i18n'
 import { enqueue, flushOutbox } from './outbox'
 import { browserPlayer } from './player'
@@ -155,7 +154,7 @@ export function KioskApp({ farmId }: { farmId?: string }) {
             <StartFact label={t('kiosk.sunrise')} value={b.sun?.sunrise ? new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(b.sun.sunrise)) : '—'} sub="" />
           </span>
           <span className="mt-10 inline-flex h-16 items-center gap-3 rounded-xl bg-white px-8 text-xl font-semibold text-[#0e1311] shadow-[0_10px_40px_-10px_rgb(14_107_75/0.7)] transition-transform group-active:scale-[0.98]">
-            <Speaker className="text-2xl text-[var(--k-green,#0e6b4b)]" /> {t('kiosk.tapToStart')}
+            {t('kiosk.tapToStart')}
           </span>
           <span className="mt-4 text-[0.9375rem] text-white/50">{t('kiosk.tapToStartHint')}</span>
         </span>
