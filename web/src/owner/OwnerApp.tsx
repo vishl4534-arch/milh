@@ -237,8 +237,8 @@ function TodayTab({ farm, openAlerts }: { farm: Farm; openAlerts: number }) {
           note={costPerM3 != null ? `≈ AED ${costPerM3.toFixed(2)} per m³ of well water kept` : 'Water and pumping, per day'} />
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
-        <section aria-label="Today's plan" className="k-card flex min-w-0 flex-col overflow-hidden">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_20rem] xl:gap-x-6">
+        <section aria-label="Today's plan" className="k-card flex min-w-0 flex-col overflow-hidden xl:col-start-1 xl:row-start-1">
           <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b border-[var(--k-line)] px-5 py-4">
             <h2 className="text-[0.9375rem] font-semibold">Irrigation plan{day ? ` · ${dayMonth(day, farm.timezone)}` : ''}</h2>
             <span className="text-[0.8125rem] text-[var(--k-muted)]">{list.length} blocks · {list.filter((p) => p.skip_reason).length} skipped</span>
@@ -259,16 +259,19 @@ function TodayTab({ farm, openAlerts }: { farm: Farm; openAlerts: number }) {
               </tbody>
             </table>
           </div>
-          <p className="mt-auto border-t border-[var(--k-line)] bg-[var(--k-green-soft)]/50 px-5 py-3.5 text-[0.8125rem] leading-relaxed text-[#21352c]">
-            <b className="font-semibold text-[var(--k-green)]">Why this beats the habit.</b> The usual routine pumps the same salty well
-            water every day: too much where the crop needs little, too little to wash salt out where it needs more. Milh sizes
-            each block to today's weather and blends in clean water only where salt demands it.
-          </p>
         </section>
 
-        <div className="grid grid-rows-[1fr_auto] gap-4">
+        {/* Row 2 on wide screens: the why-note sits beside the alerts card, same height, same gap. */}
+        <p className="flex items-center rounded-xl border border-[var(--k-line)] bg-[var(--k-green-soft)]/50 px-5 py-4 text-[0.8125rem] leading-relaxed text-[#21352c] xl:col-start-1 xl:row-start-2">
+          <span><b className="font-semibold text-[var(--k-green)]">Why this beats the habit.</b> The usual routine pumps the same salty well
+          water every day: too much where the crop needs little, too little to wash salt out where it needs more. Milh sizes
+          each block to today's weather and blends in clean water only where salt demands it.</span>
+        </p>
+
+        <div className="grid xl:col-start-2 xl:row-start-1">
           {b ? <WeatherCard bundle={b} /> : <div className="k-card min-h-40" />}
-          <Link to={`/owner/farms/${farm.id}/alerts`} className="k-card flex items-center gap-3 p-4 transition-colors hover:border-[var(--k-line-strong)]">
+        </div>
+        <Link to={`/owner/farms/${farm.id}/alerts`} className="k-card flex items-center gap-3 p-4 transition-colors hover:border-[var(--k-line-strong)] xl:col-start-2 xl:row-start-2">
             <span className={`grid size-9 place-items-center rounded-lg ${openAlerts ? 'bg-[var(--k-amber-soft)] text-[var(--k-amber)]' : 'bg-[var(--k-green-soft)] text-[var(--k-green)]'}`}>
               {openAlerts ? <Bell /> : <Check />}
             </span>
@@ -277,8 +280,7 @@ function TodayTab({ farm, openAlerts }: { farm: Farm; openAlerts: number }) {
               <span className="block text-[0.8125rem] text-[var(--k-muted)]">{openAlerts ? 'Review and resolve' : 'Nothing needs you right now'}</span>
             </span>
             <span aria-hidden className="ms-auto text-[var(--k-faint)]">→</span>
-          </Link>
-        </div>
+        </Link>
       </div>
 
       <section aria-label="Decision detail" className="grid gap-3">
